@@ -100,9 +100,7 @@ const Navbar = () => {
                             ))}
                         </ul>
 
-                        import GoogleTranslate from './GoogleTranslate';
 
-                        // ... inside nav-actions ...
                         <div className="nav-actions">
                             {/* Native Language Toggle */}
                             <button onClick={toggleLanguage} className="lang-toggle">
