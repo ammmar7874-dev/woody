@@ -1,6 +1,10 @@
 .product-card {
     background: white;
     transition: var(--transition-smooth);
+    border-radius: 8px;
+    /* Added rounding */
+    overflow: hidden;
+    /* Ensure children respect rounding */
 }
 
 .product-image-box {
@@ -8,6 +12,8 @@
     aspect-ratio: 4/5;
     overflow: hidden;
     background: #eee;
+    border-radius: 8px 8px 0 0;
+    /* Rounded top corners */
 }
 
 .product-image-box img {
@@ -56,7 +62,8 @@
 }
 
 .product-info {
-    padding: 1.5rem 0;
+    padding: 1.5rem 1.25rem;
+    /* Added horizontal padding */
 }
 
 .product-category {

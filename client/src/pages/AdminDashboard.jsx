@@ -1,28 +1,168 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Users, Settings, LogOut,
     TrendingUp, DollarSign, ShoppingBag, Plus, Bell,
-    Search, User, Image, Globe, ArrowLeft, Mail, Phone,
-    Shield, MapPin, Save
+    Search, User, Image, ArrowLeft, Mail, Phone,
+    Shield, MapPin, Save, Menu, X, Upload, AlertCircle, Check
 } from 'lucide-react';
 import './AdminDashboard.css';
+
+import { db, auth, storage } from '../firebase/config';
+import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
-    const [products, setProducts] = useState([
-        { id: 1, name: 'The Walnut Desk', price: 2400, category: 'Office', stock: 5, status: 'Active' },
-        { id: 2, name: 'Minimalist Oak Chair', price: 850, category: 'Dining', stock: 12, status: 'Active' },
-        { id: 3, name: 'Reclaimed Root Table', price: 3200, category: 'Living', stock: 1, status: 'Active' },
-    ]);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [products, setProducts] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [newProduct, setNewProduct] = useState({
+        name: '', price: '', category: 'Living', stock: '', description: '', image: ''
+    });
+    const [editingId, setEditingId] = useState(null);
+    const [errors, setErrors] = useState({});
 
-    const [requests, setRequests] = useState([
-        { id: 101, user: 'Ahmet Yilmaz', type: 'Custom Quote', status: 'Pending', date: '2024-02-10', email: 'ahmet@example.com' },
-        { id: 102, user: 'John Doe', type: 'Product Offer', status: 'Reviewed', date: '2024-02-09', email: 'john@example.com' },
-        { id: 103, user: 'Sarah Smith', type: 'Custom Quote', status: 'In Progress', date: '2024-02-08', email: 'sarah@example.com' },
-    ]);
+    const validateForm = () => {
+        const newErrors = {};
+        if (!newProduct.name.trim()) newErrors.name = "Product name is required";
+        if (!newProduct.price || isNaN(newProduct.price) || Number(newProduct.price) <= 0) newErrors.price = "Valid price is required";
+        if (!newProduct.stock || isNaN(newProduct.stock) || Number(newProduct.stock) < 0) newErrors.stock = "Valid stock is required";
+        if (!newProduct.category) newErrors.category = "Category is required";
+        if (!imageFile && !newProduct.image) newErrors.image = "Product image is required";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Fetch Products Real-time
+    useEffect(() => {
+        const q = query(collection(db, "products"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const prods = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            setProducts(prods);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleAddProduct = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        setIsUploading(true);
+        try {
+            let imageUrl = newProduct.image;
+
+            if (imageFile) {
+                // Convert file to Base64
+                const reader = new FileReader();
+                imageUrl = await new Promise((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                    reader.readAsDataURL(imageFile);
+                });
+            }
+
+            const productData = {
+                ...newProduct,
+                image: imageUrl,
+                price: Number(newProduct.price),
+                stock: Number(newProduct.stock),
+                status: Number(newProduct.stock) > 0 ? 'Active' : 'Out of Stock',
+                updatedAt: new Date().toISOString()
+            };
+
+            if (editingId) {
+                await updateDoc(doc(db, "products", editingId), productData);
+            } else {
+                productData.createdAt = new Date().toISOString();
+                await addDoc(collection(db, "products"), productData);
+            }
+
+            setShowAddModal(false);
+            setActiveTab('products'); // Switch back to list view
+            resetForm();
+        } catch (error) {
+            console.error("Error saving product: ", error);
+            alert("Failed to save product");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const resetForm = () => {
+        setNewProduct({ name: '', price: '', category: 'Living', stock: '', description: '', image: '' });
+        setImageFile(null);
+        setEditingId(null);
+        setErrors({});
+    };
+
+    const handleEditClick = (product) => {
+        setNewProduct(product);
+        setEditingId(product.id);
+        setActiveTab('addProduct');
+        setImageFile(null); // Reset file input, use existing image by default
+    };
+
+    const handleImageChange = (e) => {
+        if (e.target.files[0]) {
+            setImageFile(e.target.files[0]);
+        }
+    };
+
+
+    const handleDeleteProduct = async (id) => {
+        if (window.confirm("Are you sure you want to delete this product?")) {
+            try {
+                await deleteDoc(doc(db, "products", id));
+            } catch (error) {
+                console.error("Error deleting product:", error);
+                alert("Failed to delete product");
+            }
+        }
+    };
+
+    const handleStatusUpdate = async (id, newStatus) => {
+        try {
+            await updateDoc(doc(db, "quotes", id), {
+                status: newStatus,
+                updatedAt: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("Failed to update status");
+        }
+    };
+
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const q = query(collection(db, "quotes"), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const quotes = [];
+            querySnapshot.forEach((doc) => {
+                quotes.push({ ...doc.data(), _id: doc.id });
+            });
+            setRequests(quotes);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            navigate('/login');
+        } catch (error) {
+            console.error("Error signing out: ", error);
+        }
+    };
 
     const containerVariants = {
         hidden: { opacity: 0, scale: 0.98 },
@@ -38,6 +178,8 @@ const AdminDashboard = () => {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 }
     };
+
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     const renderContent = () => {
         switch (activeTab) {
@@ -73,7 +215,7 @@ const AdminDashboard = () => {
                             <div className="stat-icon-bg orange"><Users size={24} /></div>
                             <div className="stat-info">
                                 <h3>Pending Requests</h3>
-                                <p className="stat-value">18</p>
+                                <p className="stat-value">{requests.length || 18}</p>
                                 <span className="stat-trend warning">Action Required</span>
                             </div>
                         </motion.div>
@@ -133,7 +275,10 @@ const AdminDashboard = () => {
                                             <td>${p.price}</td>
                                             <td>{p.stock} units</td>
                                             <td><span className="status-badge active">{p.status}</span></td>
-                                            <td><button className="action-btn">Edit</button></td>
+                                            <td>
+                                                <button className="action-btn" onClick={() => handleEditClick(p)} style={{ marginRight: '0.5rem' }}>Edit</button>
+                                                <button className="action-btn delete-btn" onClick={() => handleDeleteProduct(p.id)} style={{ backgroundColor: '#ff4d4f', color: 'white', border: 'none' }}>Delete</button>
+                                            </td>
                                         </motion.tr>
                                     ))}
                                 </tbody>
@@ -149,51 +294,129 @@ const AdminDashboard = () => {
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        className="form-section glass-card"
+                        className="form-section"
                     >
-                        <div className="section-header">
-                            <button className="back-btn" onClick={() => setActiveTab('products')}><ArrowLeft size={18} /> Back</button>
-                            <h2>Add New Product</h2>
+
+                        <div className="section-header" style={{ marginBottom: '2rem' }}>
+                            <button className="back-btn" onClick={() => { setActiveTab('products'); resetForm(); }}><ArrowLeft size={18} /> Back to Products</button>
+                            <h2>{editingId ? 'Edit Product' : 'Add New Product'}</h2>
                         </div>
-                        <form className="admin-form">
-                            <div className="form-grid">
-                                <div className="input-field">
-                                    <label>Product Name</label>
-                                    <input type="text" placeholder="e.g. Handmade Oak Desk" />
-                                </div>
-                                <div className="input-field">
-                                    <label>Category</label>
-                                    <select>
-                                        <option>Living Room</option>
-                                        <option>Office</option>
-                                        <option>Dining</option>
-                                        <option>Bedroom</option>
-                                    </select>
-                                </div>
-                                <div className="input-field">
-                                    <label>Price ($)</label>
-                                    <input type="number" placeholder="0.00" />
-                                </div>
-                                <div className="input-field">
-                                    <label>Stock Quantity</label>
-                                    <input type="number" placeholder="0" />
-                                </div>
-                                <div className="input-field full-width">
-                                    <label>Description</label>
-                                    <textarea rows="4" placeholder="Enter product details..."></textarea>
-                                </div>
-                                <div className="input-field full-width">
-                                    <label>Product Images</label>
-                                    <div className="image-upload-zone">
-                                        <Image size={32} />
-                                        <p>Click or drag images to upload</p>
-                                        <span>Supports: JPG, PNG, WEBP</span>
+
+                        <form onSubmit={handleAddProduct} className="add-product-container">
+                            {/* Left Column: Form Details */}
+                            <div className="product-form-card">
+                                <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Product Details</h3>
+                                <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                    <div className={`input-field ${errors.name ? 'error' : ''}`}>
+                                        <label>Product Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Handmade Oak Desk"
+                                            value={newProduct.name}
+                                            onChange={(e) => {
+                                                setNewProduct({ ...newProduct, name: e.target.value });
+                                                if (errors.name) setErrors({ ...errors, name: null });
+                                            }}
+                                        />
+                                        {errors.name && <span className="error-message"><AlertCircle size={14} /> {errors.name}</span>}
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                        <div className={`input-field ${errors.price ? 'error' : ''}`}>
+                                            <label>Price ($)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                value={newProduct.price}
+                                                onChange={(e) => {
+                                                    setNewProduct({ ...newProduct, price: e.target.value });
+                                                    if (errors.price) setErrors({ ...errors, price: null });
+                                                }}
+                                            />
+                                            {errors.price && <span className="error-message"><AlertCircle size={14} /> {errors.price}</span>}
+                                        </div>
+                                        <div className={`input-field ${errors.stock ? 'error' : ''}`}>
+                                            <label>Stock</label>
+                                            <input
+                                                type="number"
+                                                placeholder="0"
+                                                value={newProduct.stock}
+                                                onChange={(e) => {
+                                                    setNewProduct({ ...newProduct, stock: e.target.value });
+                                                    if (errors.stock) setErrors({ ...errors, stock: null });
+                                                }}
+                                            />
+                                            {errors.stock && <span className="error-message"><AlertCircle size={14} /> {errors.stock}</span>}
+                                        </div>
+                                    </div>
+
+                                    <div className={`input-field ${errors.category ? 'error' : ''}`}>
+                                        <label>Category</label>
+                                        <select
+                                            value={newProduct.category}
+                                            onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                                        >
+                                            <option value="Living">Living Room</option>
+                                            <option value="Office">Office</option>
+                                            <option value="Dining">Dining</option>
+                                            <option value="Bedroom">Bedroom</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="input-field full-width">
+                                        <label>Description</label>
+                                        <textarea
+                                            rows="5"
+                                            placeholder="Describe the product features, materials, and care instructions..."
+                                            value={newProduct.description || ''}
+                                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                                        ></textarea>
                                     </div>
                                 </div>
                             </div>
-                            <div className="form-actions">
-                                <button type="button" className="cancel-btn" onClick={() => setActiveTab('products')}>Cancel</button>
-                                <button type="submit" className="gold-btn">Create Product</button>
+
+                            {/* Right Column: Media */}
+                            <div className="product-media-card">
+                                <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Product Media</h3>
+                                <div className={`image-upload-wrapper ${errors.image ? 'error' : ''}`} style={{ borderColor: errors.image ? '#e53e3e' : '' }}>
+                                    {(imageFile || newProduct.image) ? (
+                                        <div className="image-preview-container">
+                                            <img src={imageFile ? URL.createObjectURL(imageFile) : newProduct.image} alt="Preview" />
+                                            <button type="button" className="remove-image-btn" onClick={() => {
+                                                setImageFile(null);
+                                                setNewProduct({ ...newProduct, image: '' });
+                                            }}>
+                                                <X size={18} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Upload size={40} className="upload-icon" />
+                                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#4a5568' }}>Drop image here</h4>
+                                            <p className="text-sm" style={{ marginBottom: '1.5rem' }}>or click to browse</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    if (e.target.files[0]) {
+                                                        setImageFile(e.target.files[0]);
+                                                        if (errors.image) setErrors({ ...errors, image: null });
+                                                    }
+                                                }}
+                                            />
+                                            <p className="text-xs">Supports: JPG, PNG, WEBP</p>
+                                        </>
+                                    )}
+                                </div>
+                                {errors.image && <span className="error-message" style={{ justifyContent: 'center' }}><AlertCircle size={14} /> {errors.image}</span>}
+
+                                <div className="form-actions" style={{ marginTop: '2rem', borderTop: 'none', padding: 0, justifyContent: 'space-between' }}>
+                                    <button type="button" className="cancel-btn" style={{ width: '48%' }} onClick={() => { setActiveTab('products'); resetForm(); }}>Cancel</button>
+                                    <button type="submit" className="gold-btn" style={{ width: '48%', justifyContent: 'center' }} disabled={isUploading}>
+                                        {isUploading ? 'Saving...' : (editingId ? 'Update Product' : 'Save Product')}
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </motion.div>
@@ -210,7 +433,7 @@ const AdminDashboard = () => {
                     >
                         <div className="table-header">
                             <div>
-                                <h2>Quote Requests</h2>
+                                <h2>Quote Requests & Messages</h2>
                                 <p>Track and respond to customer inquiries</p>
                             </div>
                             <div className="search-bar">
@@ -224,30 +447,76 @@ const AdminDashboard = () => {
                                 <thead>
                                     <tr>
                                         <th>Customer</th>
-                                        <th>Type</th>
+                                        <th>Details</th>
                                         <th>Date</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {requests.map((r, i) => (
-                                        <motion.tr key={r.id} variants={itemVariants} custom={i}>
+                                    {requests.length > 0 ? requests.map((r, i) => (
+                                        <motion.tr key={r._id || i} variants={itemVariants} custom={i}>
                                             <td>
                                                 <div className="user-cell">
-                                                    <div className="user-avatar">{r.user[0]}</div>
+                                                    <div className="user-avatar">{r.name ? r.name[0].toUpperCase() : 'U'}</div>
                                                     <div>
-                                                        <div className="fw-600">{r.user}</div>
+                                                        <div className="fw-600">{r.name}</div>
                                                         <div className="text-sm">{r.email}</div>
+                                                        <div className="text-xs">{r.phone}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>{r.type}</td>
-                                            <td>{r.date}</td>
-                                            <td><span className={`status-badge ${r.status.toLowerCase().replace(' ', '-')}`}>{r.status}</span></td>
-                                            <td><button className="action-btn primary">View</button></td>
+                                            <td>
+                                                <div className="text-sm">
+                                                    <strong>Timeline:</strong> {r.timeline}<br />
+                                                    <span className="truncate-text" title={r.description}>{r.description && r.description.substring(0, 30)}...</span>
+                                                    {r.fileName && (
+                                                        <div style={{ marginTop: '4px' }}>
+                                                            <a href={r.file} download={r.fileName} className="text-xs" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
+                                                                View Attachment ({r.fileName})
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                            <td>
+                                                <select
+                                                    className={`status-select ${r.status ? r.status.toLowerCase() : 'pending'}`}
+                                                    value={r.status || 'pending'}
+                                                    onChange={(e) => handleStatusUpdate(r._id, e.target.value)}
+                                                    style={{
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid #e2e8f0',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 500
+                                                    }}
+                                                >
+                                                    <option value="pending">Pending</option>
+                                                    <option value="replied">Replied</option>
+                                                    <option value="closed">Closed</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <a
+                                                        href={`mailto:${r.email}?subject=Re: Your Quote Request - Woodify&body=Hi ${r.name},%0D%0A%0D%0AThank you for your interest in Woodify. We have received your request regarding: "${r.description}".`}
+                                                        className="action-btn primary"
+                                                        onClick={() => handleStatusUpdate(r._id, 'replied')}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
+                                                    >
+                                                        <Mail size={14} /> Reply
+                                                    </a>
+                                                    {/* <button className="action-btn">View</button> */}
+                                                </div>
+                                            </td>
                                         </motion.tr>
-                                    ))}
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No requests found.</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -407,26 +676,34 @@ const AdminDashboard = () => {
 
     return (
         <div className="admin-layout">
-            <aside className="admin-sidebar">
-                <div className="admin-logo">
-                    <div className="logo-box">W</div>
-                    <div className="logo-text">WOODIFY <span>ADMIN</span></div>
+            {/* Mobile Sidebar Overlay */}
+            <div className={`admin-sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} onClick={toggleSidebar}></div>
+
+            <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+                <div className="admin-logo-row">
+                    <div className="admin-logo">
+                        <div className="logo-box">W</div>
+                        <div className="logo-text">WOODIFY <span>ADMIN</span></div>
+                    </div>
+                    <button className="close-sidebar-btn" onClick={toggleSidebar}>
+                        <X size={24} />
+                    </button>
                 </div>
 
                 <nav className="admin-nav">
-                    <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>
+                    <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => { setActiveTab('overview'); setIsSidebarOpen(false); }}>
                         <LayoutDashboard size={20} /> Dashboard
                     </button>
-                    <button className={activeTab === 'products' || activeTab === 'addProduct' ? 'active' : ''} onClick={() => setActiveTab('products')}>
+                    <button className={activeTab === 'products' || activeTab === 'addProduct' ? 'active' : ''} onClick={() => { setActiveTab('products'); setIsSidebarOpen(false); }}>
                         <Package size={20} /> Products
                     </button>
-                    <button className={activeTab === 'requests' ? 'active' : ''} onClick={() => setActiveTab('requests')}>
+                    <button className={activeTab === 'requests' ? 'active' : ''} onClick={() => { setActiveTab('requests'); setIsSidebarOpen(false); }}>
                         <Users size={20} /> Customers
                     </button>
-                    <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
+                    <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }}>
                         <User size={20} /> Profile
                     </button>
-                    <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>
+                    <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }}>
                         <Settings size={20} /> Settings
                     </button>
                 </nav>
@@ -444,13 +721,18 @@ const AdminDashboard = () => {
 
             <main className="admin-main">
                 <header className="admin-topbar">
-                    <h2 className="page-title">{activeTab === 'addProduct' ? 'Add Product' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
+                    <div className="topbar-left">
+                        <button className="menu-btn" onClick={toggleSidebar}>
+                            <Menu size={24} />
+                        </button>
+                        <h2 className="page-title">{activeTab === 'addProduct' ? 'Add Product' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
+                    </div>
                     <div className="topbar-actions">
                         <button className="icon-btn" onClick={() => setActiveTab('settings')}><Search size={20} /></button>
                         <button className="icon-btn"><Bell size={20} /><span className="notification-dot"></span></button>
                         <div className="admin-profile" onClick={() => setActiveTab('profile')} style={{ cursor: 'pointer' }}>
                             <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80" alt="Admin" />
-                            <span>Admin User</span>
+                            <span className="desktop-only">Admin User</span>
                         </div>
                     </div>
                 </header>
@@ -464,5 +746,4 @@ const AdminDashboard = () => {
         </div>
     );
 };
-
 export default AdminDashboard;

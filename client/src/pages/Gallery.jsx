@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import './Gallery.css';
 
 import { useTranslation } from 'react-i18next';
@@ -33,10 +34,12 @@ const Gallery = () => {
                             transition={{ delay: idx * 0.1 }}
                             className="gallery-item"
                         >
-                            <img src={project.img} alt={project.title} />
-                            <div className="gallery-overlay">
-                                <h3>{project.title}</h3>
-                            </div>
+                            <Link to={`/product/${project.id}`} style={{ display: 'block', height: '100%', width: '100%' }}>
+                                <img src={project.img} alt={project.title} />
+                                <div className="gallery-overlay">
+                                    <h3>{project.title}</h3>
+                                </div>
+                            </Link>
                         </motion.div>
                     ))}
                 </div>

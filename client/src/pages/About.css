@@ -106,4 +106,13 @@
     .contact-info {
         padding: 2rem;
     }
+
+    .story-content {
+        padding: 0 1.5rem;
+        text-align: center;
+    }
+
+    .story-image {
+        height: 300px;
+    }
 }

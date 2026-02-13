@@ -1,88 +1,119 @@
 .journey-section {
-    background: white;
+    background-color: var(--bg-cream);
+    overflow: hidden;
+    position: relative;
 }
 
 .journey-header {
     text-align: center;
-    margin-bottom: 5rem;
+    margin-bottom: var(--spacing-xl);
 }
 
-.title-underline {
-    width: 60px;
-    height: 2px;
-    background: var(--secondary);
-    margin: 1.5rem auto 0;
+.journey-subtitle-text {
+    color: var(--text-muted);
+    font-size: 1.1rem;
 }
 
-.steps-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 3rem;
+.journey-timeline {
+    position: relative;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
-.step-card {
-    text-align: center;
-    padding: 2rem;
-    transition: var(--transition-smooth);
+.timeline-line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--accent);
+    transform: translateX(-50%);
+    z-index: 1;
 }
 
-.step-card:hover {
-    transform: translateY(-10px);
+.journey-step {
+    display: flex;
+    margin-bottom: var(--spacing-xl);
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+.journey-step.left {
+    justify-content: flex-start;
+}
+
+.journey-step.right {
+    justify-content: flex-right;
+    flex-direction: row-reverse;
+}
+
+.step-content {
+    width: 45%;
+    background: var(--bg-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-premium);
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+    border-bottom: 3px solid var(--secondary);
 }
 
 .step-icon-wrapper {
-    width: 100px;
-    height: 100px;
-    background: var(--bg-cream);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 2rem;
+    color: var(--secondary);
     position: relative;
-    color: var(--primary);
-    transition: var(--transition-smooth);
-}
-
-.step-card:hover .step-icon-wrapper {
-    background: var(--primary);
-    color: white;
+    flex-shrink: 0;
 }
 
 .step-number {
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 30px;
-    height: 30px;
-    background: var(--secondary);
-    border-radius: 50%;
+    top: -10px;
+    right: -10px;
+    font-size: 0.75rem;
+    background: var(--primary);
     color: white;
-    font-weight: 700;
-    font-size: 0.8rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: 700;
 }
 
-.step-card h3 {
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
+.step-text h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
 }
 
-.step-card p {
-    font-size: 0.95rem;
+.step-text p {
     color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
 }
 
-@media (max-width: 968px) {
-    .steps-grid {
-        grid-template-columns: 1fr 1fr;
+.step-connector {
+    width: 10%;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .timeline-line {
+        left: 20px;
     }
-}
 
-@media (max-width: 600px) {
-    .steps-grid {
-        grid-template-columns: 1fr;
+    .journey-step {
+        flex-direction: row !important;
+    }
+
+    .step-content {
+        width: calc(100% - 40px);
+        margin-left: 40px;
+    }
+
+    .step-connector {
+        display: none;
     }
 }

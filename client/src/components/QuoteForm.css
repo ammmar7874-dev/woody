@@ -65,7 +65,10 @@
     border: 1px solid #ddd;
     border-radius: 2px;
     font-family: var(--font-body);
+    font-size: 16px;
+    /* Prevents iOS zoom */
     outline: none;
+    width: 100%;
     transition: var(--transition-smooth);
 }
 

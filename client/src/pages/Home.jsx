@@ -1,43 +1,82 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import Hero from '../components/Hero';
 import DesignJourney from '../components/DesignJourney';
 import ProductCard from '../components/ProductCard';
 import QuoteForm from '../components/QuoteForm';
+import Features from '../components/Features';
+import Testimonials from '../components/Testimonials';
+import FAQ from '../components/FAQ';
+import Newsletter from '../components/Newsletter';
 import { useTranslation } from 'react-i18next';
 
-// Mock data moved here or imported
-const MOCK_PRODUCTS = [
-    { id: 1, name: 'The Walnut Desk', category: 'OFFICE', shortDesc: 'Solid walnut with brass inlay.', image: '/assets/products/walnut-desk.jpg', price: '$2,400' },
-    { id: 2, name: 'Minimalist Oak Chair', category: 'DINING', shortDesc: 'Light oak with natural finish.', image: '/assets/products/oak-chair.jpg', price: '$850' },
-    { id: 3, name: 'Reclaimed Root Table', category: 'LIVING', shortDesc: 'A unique centerpiece for any home.', image: '/assets/products/root-table.jpg', price: '$3,200' },
-    { id: 4, name: 'Mid-Century Console', category: 'LIVING', shortDesc: 'Teak wood with sliding doors.', image: '/assets/products/console.jpg', price: '$1,800' },
-    { id: 5, name: 'Artisan Bookshelf', category: 'OFFICE', shortDesc: 'Floor to ceiling custom joinery.', image: '/assets/products/bookshelf.jpg', price: '$4,500' },
-    { id: 6, name: 'Live Edge Dining', category: 'DINING', shortDesc: 'Single slab walnut with epoxy.', image: '/assets/products/dining.jpg', price: '$5,200' },
-];
+import { db } from '../firebase/config';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 
 const Home = () => {
     const { t } = useTranslation();
+    const [products, setProducts] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const q = query(collection(db, "products"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const prods = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            setProducts(prods);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
     return (
-        <>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+        >
             <Hero />
+            <Features />
             <DesignJourney />
+
             <section className="section-padding" id="products">
                 <div className="container">
-                    <div className="collection-header">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="collection-header"
+                    >
                         <h2 className="section-title">{t('section_collection')}</h2>
                         <p>{t('section_collection_sub')}</p>
-                    </div>
-                    <div className="products-grid">
-                        {MOCK_PRODUCTS.map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
+                    </motion.div>
+
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</div>
+                    ) : (
+                        <div className="products-grid">
+                            {products.length > 0 ? (
+                                products.map(product => (
+                                    <ProductCard key={product.id} product={product} />
+                                ))
+                            ) : (
+                                <p style={{ textAlign: 'center', width: '100%' }}>No products found.</p>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
+
+            <Testimonials />
+
             <section className="section-padding quote-section" id="quote">
                 <div className="container">
                     <div className="quote-grid">
-                        <div className="quote-text">
+                        <motion.div
+                            initial={{ opacity: 0, x: -50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            className="quote-text"
+                        >
                             <h2 className="section-title">{t('section_bring_vision')}</h2>
                             <p>{t('section_bring_vision_text')}</p>
                             <ul className="craft-list">
@@ -45,14 +84,17 @@ const Home = () => {
                                 <li>{t('craft_2')}</li>
                                 <li>{t('craft_3')}</li>
                             </ul>
-                        </div>
+                        </motion.div>
                         <QuoteForm />
                     </div>
                 </div>
             </section>
-        </>
+
+            <FAQ />
+            <Newsletter />
+        </motion.div>
     );
 };
 
 export default Home;
-export { MOCK_PRODUCTS };
+

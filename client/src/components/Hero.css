@@ -24,10 +24,16 @@
 }
 
 .hero-title {
-    font-size: clamp(3rem, 8vw, 5rem);
+    font-size: clamp(3rem, 8vw, 5.5rem);
     color: var(--primary);
     margin-bottom: 2rem;
-    line-height: 1.1;
+    line-height: 1;
+}
+
+.word-wrapper {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
 }
 
 .hero-subtitle {
@@ -119,18 +125,59 @@
 }
 
 @media (max-width: 968px) {
+    .hero {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        padding-top: 6rem;
+        /* Space for fixed navbar */
+        padding-bottom: 2rem;
+    }
+
     .hero-content {
         width: 100%;
         text-align: center;
-        padding-top: 5rem;
+        padding-top: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Added wrapper to ensure content is centered */
+    .hero-inner-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .hero-title {
+        font-size: clamp(2.5rem, 10vw, 3.5rem);
+        /* Smaller font for mobile */
+        margin-bottom: 1.5rem;
     }
 
     .hero-subtitle {
-        margin: 0 auto 3rem;
+        margin: 0 auto 2rem;
+        font-size: 1rem;
+        padding: 0 1rem;
+        /* Prevent text touching edges */
     }
 
     .hero-actions {
         justify-content: center;
+        flex-direction: column;
+        /* Stack buttons on small screens */
+        width: 100%;
+        max-width: 300px;
+        gap: 1rem;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+        width: 100%;
+        /* Full width buttons on mobile */
+        padding: 1rem 2rem;
     }
 
     .hero-visual {
@@ -138,15 +185,22 @@
         width: 100%;
         right: 0;
         height: 50vh;
-        margin-top: 4rem;
+        /* Give it space */
+        min-height: 300px;
+        margin-top: 3rem;
         clip-path: none;
+        z-index: 1;
     }
 
     .hero-image-container {
         clip-path: none;
+        border-radius: 12px;
+        /* Add some radius for better look */
+        overflow: hidden;
     }
 
     .hero-overlay {
-        background: linear-gradient(0deg, var(--bg-cream) 0%, transparent 40%);
+        /* Gradient from bottom (cream) to top (transparent) */
+        background: linear-gradient(0deg, var(--bg-cream) 0%, transparent 20%);
     }
 }

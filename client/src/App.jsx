@@ -7,45 +7,45 @@ import ProductDetail from './pages/ProductDetail';
 import Gallery from './pages/Gallery';
 import About from './pages/About';
 import AdminDashboard from './pages/AdminDashboard';
+import Footer from './components/Footer';
 import './App.css';
+import { QuoteProvider } from './context/QuoteContext.jsx';
+
+import { AuthProvider } from './context/AuthContext';
+import Login from './pages/Login';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
     const location = useLocation();
-    const isAdmin = location.pathname.startsWith('/admin');
+    const isAdmin = location.pathname.startsWith('/admin') || location.pathname === '/login';
 
     return (
-        <div className="app">
-            {!isAdmin && <Navbar />}
-            <main>
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    <Route path="/gallery" element={<Gallery />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/admin/*" element={<AdminDashboard />} />
-                </Routes>
-            </main>
+        <AuthProvider>
+            <QuoteProvider>
+                <div className="app">
+                    {!isAdmin && <Navbar />}
+                    <main>
+                        <Routes>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/product/:id" element={<ProductDetail />} />
+                            <Route path="/gallery" element={<Gallery />} />
+                            <Route path="/about" element={<About />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route
+                                path="/admin/*"
+                                element={
+                                    <PrivateRoute>
+                                        <AdminDashboard />
+                                    </PrivateRoute>
+                                }
+                            />
+                        </Routes>
+                    </main>
 
-            {!isAdmin && (
-                <footer className="footer-placeholder">
-                    <div className="container">
-                        <div className="footer-grid">
-                            <div>
-                                <h4>WOODIFY</h4>
-                                <p>Artisanal Craftsmanship.</p>
-                            </div>
-                            <div>
-                                <p>Showroom: Via Ticino, 15, Italy</p>
-                                <p>Contact: +39 036 2542037</p>
-                            </div>
-                        </div>
-                        <div className="footer-copy">
-                            &copy; 2024 WOODIFY. All rights reserved.
-                        </div>
-                    </div>
-                </footer>
-            )}
-        </div>
+                    {!isAdmin && <Footer />}
+                </div>
+            </QuoteProvider>
+        </AuthProvider>
     );
 }
 

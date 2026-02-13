@@ -89,6 +89,34 @@
     gap: 1.5rem;
 }
 
+.google-translate-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+/* Hide Google's top frame */
+.goog-te-banner-frame.skiptranslate {
+    display: none !important;
+}
+
+body {
+    top: 0px !important;
+}
+
+/* Customize Google Widget appearance minimally */
+.goog-te-gadget-simple {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    font-family: var(--font-body) !important;
+    font-size: 0.9rem !important;
+}
+
+.goog-te-gadget-icon {
+    display: none !important;
+}
+
+
 .lang-toggle {
     background: transparent;
     border: 1px solid rgba(0, 0, 0, 0.1);

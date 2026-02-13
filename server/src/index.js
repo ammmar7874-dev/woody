@@ -24,6 +24,7 @@ const connectDB = async () => {
 connectDB();
 
 // Routes
+app.use('/api/quotes', require('./routes/quotes'));
 app.get('/', (req, res) => {
     res.send('Woodify API is running (Status: ' + (mongoose.connection.readyState === 1 ? 'Online' : 'Offline') + ')');
 });

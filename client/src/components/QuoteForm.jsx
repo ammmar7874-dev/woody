@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Upload, Send, CheckCircle } from 'lucide-react';
 import './QuoteForm.css';
 
+import { db } from '../firebase/config';
+import { collection, addDoc } from 'firebase/firestore';
+
 const QuoteForm = ({ onClose, isModal }) => {
     const { t } = useTranslation();
     const [step, setStep] = useState(1);
@@ -16,16 +19,30 @@ const QuoteForm = ({ onClose, isModal }) => {
         timeline: '1-2 Weeks'
     });
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleNext = () => setStep(prev => prev + 1);
     const handleBack = () => setStep(prev => prev - 1);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Simulate submission
-        setTimeout(() => {
+        setIsSubmitting(true);
+
+        try {
+            await addDoc(collection(db, "quotes"), {
+                ...formData,
+                file: formData.file || null,
+                fileName: formData.fileName || null,
+                createdAt: new Date().toISOString(),
+                status: 'pending'
+            });
             setIsSubmitted(true);
-        }, 1000);
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            alert("Error submitting quote. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (isSubmitted) {
@@ -135,7 +152,22 @@ const QuoteForm = ({ onClose, isModal }) => {
                                 <div className="upload-box">
                                     <Upload size={24} />
                                     <span>{t('q_upload_sub')}</span>
-                                    <input type="file" className="file-input" onChange={(e) => setFormData({ ...formData, file: e.target.files[0] })} />
+                                    <input
+                                        type="file"
+                                        className="file-input"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setFormData({ ...formData, file: reader.result, fileName: file.name });
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                    {formData.fileName && <p className="file-name" style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#4a5568' }}>{formData.fileName}</p>}
                                 </div>
                             </div>
                             <div className="form-nav">

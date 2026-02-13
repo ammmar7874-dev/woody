@@ -2,24 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Star, ShoppingBag, Truck, Shield, ArrowRight, Check } from 'lucide-react';
-import { MOCK_PRODUCTS } from './Home';
+import { db } from '../firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
 import './ProductDetail.css';
 import { useTranslation } from 'react-i18next';
+
+import QuoteModal from '../components/QuoteModal';
 
 const ProductDetail = () => {
     const { t } = useTranslation();
     const { id } = useParams();
-    const product = MOCK_PRODUCTS.find(p => p.id === parseInt(id));
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState(0);
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
     useEffect(() => {
-        // Simulate API fetch
-        // The product is now directly found, so setProduct is no longer needed here.
-        // This useEffect might be simplified or removed if no other side effects are needed.
+        const fetchProduct = async () => {
+            try {
+                const docRef = doc(db, "products", id);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    setProduct({ id: docSnap.id, ...docSnap.data() });
+                } else {
+                    console.log("No such product!");
+                }
+            } catch (error) {
+                console.error("Error fetching product:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
         window.scrollTo(0, 0);
     }, [id]);
 
-    if (!product) return <div className="loading">Loading...</div>;
+    if (loading) return <div className="loading" style={{ height: '50vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading product details...</div>;
+    if (!product) return <div className="loading" style={{ height: '50vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Product not found.</div>;
 
     // Mock multiple images
     const images = [
@@ -73,7 +94,7 @@ const ProductDetail = () => {
 
                         <p className="price">{product.price}</p>
                         <p className="description">
-                            {product.shortDesc} Handcrafted from sustainable sources, this piece embodies the true spirit of artisanal woodworking. Custom dimensions available upon request.
+                            {product.description} Handcrafted from sustainable sources, this piece embodies the true spirit of artisanal woodworking. Custom dimensions available upon request.
                         </p>
 
                         <div className="specs-box">
@@ -87,7 +108,10 @@ const ProductDetail = () => {
                         </div>
 
                         <div className="action-area">
-                            <button className="primary-btn request-offer-btn">
+                            <button
+                                className="primary-btn request-offer-btn"
+                                onClick={() => setIsQuoteModalOpen(true)}
+                            >
                                 {t('cta_quote')}
                             </button>
                             <p className="secure-note">
@@ -105,6 +129,11 @@ const ProductDetail = () => {
                     </div>
                 </div>
             </div>
+
+            <QuoteModal
+                isOpen={isQuoteModalOpen}
+                onClose={() => setIsQuoteModalOpen(false)}
+            />
         </div>
     );
 };

@@ -2,29 +2,38 @@
 
 :root {
   /* Color Palette - Premium Walnut & Cream */
-  --primary: #2d241e; /* Deep Walnut */
+  --primary: #2d241e;
+  /* Deep Walnut */
   --primary-light: #4a3c32;
-  --secondary: #c5a059; /* Muted Gold/Oak */
-  --accent: #d8c4b6; /* Natural Sand */
+  --secondary: #c5a059;
+  /* Muted Gold/Oak */
+  --accent: #d8c4b6;
+  /* Natural Sand */
   --bg-cream: #f9f7f2;
   --bg-white: #ffffff;
   --text-main: #2d241e;
   --text-muted: #6b5e54;
   --overlay: rgba(45, 36, 30, 0.4);
-  
+
   /* Typography */
   --font-heading: 'Playfair Display', serif;
   --font-body: 'Montserrat', sans-serif;
-  
+
   /* Spacing & Borders */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 2rem;
   --spacing-lg: 4rem;
   --spacing-xl: 8rem;
-  --border-radius: 4px; /* Subtle, sharp for premium feel */
+  --border-radius: 4px;
+  /* Subtle, sharp for premium feel */
   --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  --shadow-premium: 0 20px 40px rgba(0,0,0,0.05);
+  --shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.05);
+
+  /* Animation Timings */
+  --anim-slow: 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --anim-med: 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  --anim-fast: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -39,10 +48,16 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
+  width: 100%;
+  position: relative;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5 {
+h1,
+h2,
+h3,
+h4,
+h5 {
   font-family: var(--font-heading);
   font-weight: 700;
   line-height: 1.2;
@@ -76,13 +91,45 @@ button {
   padding: var(--spacing-xl) 0;
 }
 
+.section-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  margin-bottom: var(--spacing-md);
+  color: var(--primary);
+  letter-spacing: -0.02em;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.stagger-reveal>* {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
 /* Scrollbar Utility */
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-cream);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--secondary);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --spacing-xl: 4rem;
+    --spacing-lg: 2rem;
+  }
+
+  .section-padding {
+    padding: var(--spacing-lg) 0;
+  }
 }

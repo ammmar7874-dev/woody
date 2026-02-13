@@ -20,6 +20,8 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 2rem;
+    justify-content: center;
+    /* Fixes left-right asymmetry */
 }
 
 .gallery-item {

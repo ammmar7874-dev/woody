@@ -4,13 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe } from 'lucide-react';
 import QuoteModal from './QuoteModal';
+import GoogleTranslate from './GoogleTranslate';
 import './Navbar.css';
+import { useQuote } from '../context/QuoteContext.jsx';
 
 const Navbar = () => {
     const { t, i18n } = useTranslation();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+    // const [isQuoteOpen, setIsQuoteOpen] = useState(false); // Removed local state
+    const { isQuoteOpen, openQuoteModal, closeQuoteModal } = useQuote();
+
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -96,11 +100,21 @@ const Navbar = () => {
                             ))}
                         </ul>
 
+                        import GoogleTranslate from './GoogleTranslate';
+
+                        // ... inside nav-actions ...
                         <div className="nav-actions">
+                            {/* Native Language Toggle */}
                             <button onClick={toggleLanguage} className="lang-toggle">
                                 <Globe size={18} />
                                 <span>{i18n.language.toUpperCase()}</span>
                             </button>
+
+                            {/* Google Translate Widget */}
+                            <div className="google-translate-wrapper">
+                                <GoogleTranslate />
+                            </div>
+
                             <button
                                 className="dashboard-btn-nav"
                                 onClick={() => navigate('/admin')}
@@ -112,7 +126,7 @@ const Navbar = () => {
                             </button>
                             <button
                                 className="quote-btn-nav"
-                                onClick={() => setIsQuoteOpen(true)}
+                                onClick={openQuoteModal}
                             >
                                 {t('cta_quote')}
                             </button>
@@ -145,7 +159,7 @@ const Navbar = () => {
                                         className="quote-btn-mobile"
                                         onClick={() => {
                                             setIsMenuOpen(false);
-                                            setIsQuoteOpen(true);
+                                            openQuoteModal();
                                         }}
                                     >
                                         {t('cta_quote')}
@@ -156,7 +170,7 @@ const Navbar = () => {
                     )}
                 </AnimatePresence>
             </nav>
-            <QuoteModal isOpen={isQuoteOpen} onClose={() => setIsQuoteOpen(false)} />
+            <QuoteModal isOpen={isQuoteOpen} onClose={closeQuoteModal} />
         </>
     );
 };
