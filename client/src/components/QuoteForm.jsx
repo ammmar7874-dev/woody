@@ -7,8 +7,11 @@ import './QuoteForm.css';
 import { db } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 
+import { useQuote } from '../context/QuoteContext.jsx';
+
 const QuoteForm = ({ onClose, isModal }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const { quoteMode, productData } = useQuote();
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
@@ -16,7 +19,10 @@ const QuoteForm = ({ onClose, isModal }) => {
         phone: '',
         description: '',
         file: null,
-        timeline: '1-2 Weeks'
+        fileName: null,
+        timeline: '1-2 Weeks',
+        whereToOrder: '',
+        extraComments: ''
     });
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,13 +35,20 @@ const QuoteForm = ({ onClose, isModal }) => {
         setIsSubmitting(true);
 
         try {
-            await addDoc(collection(db, "quotes"), {
+            const submissionData = {
                 ...formData,
-                file: formData.file || null,
-                fileName: formData.fileName || null,
+                quoteMode,
+                productDetails: productData ? {
+                    id: productData.id,
+                    name: productData.name,
+                    name_en: productData.name_en || '',
+                    name_tr: productData.name_tr || ''
+                } : null,
                 createdAt: new Date().toISOString(),
                 status: 'pending'
-            });
+            };
+
+            await addDoc(collection(db, "quotes"), submissionData);
             setIsSubmitted(true);
         } catch (error) {
             console.error("Error adding document: ", error);
@@ -74,9 +87,14 @@ const QuoteForm = ({ onClose, isModal }) => {
     return (
         <div className={`quote-form-container ${isModal ? 'modal-mode' : ''}`}>
             <div className="form-header">
-                <h3>{t('quote_title')}</h3>
+                <h3>{quoteMode === 'product' ? (i18n.language === 'tr' ? 'Ürün Sipariş Talebi' : 'Request to Order Product') : t('quote_title')}</h3>
+                {productData && (
+                    <p className="target-product-label">
+                        {i18n.language === 'tr' ? 'Seçilen Ürün' : 'Selected Product'}: <strong>{productData[`name_${i18n.language}`] || productData.name}</strong>
+                    </p>
+                )}
                 <div className="step-indicator">
-                    {[1, 2, 3].map(s => (
+                    {(quoteMode === 'product' ? [1, 2] : [1, 2, 3]).map(s => (
                         <div key={s} className={`step-dot ${step === s ? 'active' : ''} ${step > s ? 'completed' : ''}`} />
                     ))}
                 </div>
@@ -129,9 +147,47 @@ const QuoteForm = ({ onClose, isModal }) => {
                         </motion.div>
                     )}
 
-                    {step === 2 && (
+                    {step === 2 && quoteMode === 'product' && (
                         <motion.div
-                            key="step2"
+                            key="step2-product"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="form-step"
+                        >
+                            <div className="input-group">
+                                <label>{t('q_where_to_order')}</label>
+                                <textarea
+                                    rows="3"
+                                    placeholder={i18n.language === 'tr' ? 'Teslimat adresi veya şehri giriniz...' : 'Enter delivery address or city...'}
+                                    required
+                                    value={formData.whereToOrder}
+                                    onChange={(e) => setFormData({ ...formData, whereToOrder: e.target.value })}
+                                ></textarea>
+                            </div>
+                            <div className="input-group">
+                                <label>{t('q_extra_comments')}</label>
+                                <textarea
+                                    rows="3"
+                                    placeholder={i18n.language === 'tr' ? 'Eklemek istediğiniz notlar...' : 'Any extra comments...'}
+                                    value={formData.extraComments}
+                                    onChange={(e) => setFormData({ ...formData, extraComments: e.target.value })}
+                                ></textarea>
+                            </div>
+                            <div className="form-nav">
+                                <button type="button" className="secondary-btn" onClick={handleBack}>{t('q_back')}</button>
+                                <button type="submit" className="primary-btn submit-btn" disabled={isSubmitting}>
+                                    <Send size={18} />
+                                    {isSubmitting ? (i18n.language === 'tr' ? 'Gönderiliyor...' : 'Sending...') : t('q_submit')}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {step === 2 && quoteMode === 'special' && (
+                        <motion.div
+                            key="step2-special"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
@@ -147,7 +203,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 ></textarea>
                             </div>
-                            <div className="input-group file-upload-group">
+                            <div className="input-group file-upload-group" style={{ display: quoteMode === 'product' ? 'none' : 'flex' }}>
                                 <label>{t('q_upload')}</label>
                                 <div className="upload-box">
                                     <Upload size={24} />
@@ -177,9 +233,9 @@ const QuoteForm = ({ onClose, isModal }) => {
                         </motion.div>
                     )}
 
-                    {step === 3 && (
+                    {step === 3 && quoteMode === 'special' && (
                         <motion.div
-                            key="step3"
+                            key="step3-special"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
@@ -200,9 +256,9 @@ const QuoteForm = ({ onClose, isModal }) => {
                             <p className="form-note">By submitting, you agree to our privacy policy and artisanal terms.</p>
                             <div className="form-nav">
                                 <button type="button" className="secondary-btn" onClick={handleBack}>{t('q_back')}</button>
-                                <button type="submit" className="primary-btn submit-btn">
+                                <button type="submit" className="primary-btn submit-btn" disabled={isSubmitting}>
                                     <Send size={18} />
-                                    {t('q_submit')}
+                                    {isSubmitting ? (i18n.language === 'tr' ? 'Göndariliyor...' : 'Sending...') : t('q_submit')}
                                 </button>
                             </div>
                         </motion.div>

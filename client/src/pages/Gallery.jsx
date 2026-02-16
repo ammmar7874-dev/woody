@@ -8,12 +8,12 @@ import { useTranslation } from 'react-i18next';
 const Gallery = () => {
     const { t } = useTranslation();
     const projects = [
-        { id: 1, title: 'Modern Loft Kitchen', img: '/assets/gallery/kitchen.jpg' },
-        { id: 2, title: 'Rustic Walnut Vanity', img: '/assets/gallery/vanity.jpg' },
-        { id: 3, title: 'Executive Desk Suite', img: '/assets/gallery/desk-suite.jpg' },
-        { id: 4, title: 'Bespoke Media Unit', img: '/assets/gallery/media-unit.jpg' },
-        { id: 5, title: 'Scandinavian Dining Set', img: '/assets/gallery/scan-dining.jpg' },
-        { id: 6, title: 'Hand-Carved Headboard', img: '/assets/gallery/headboard.jpg' },
+        { id: 1, title: t('gallery_proj_1'), img: '/assets/gallery/kitchen.jpg' },
+        { id: 2, title: t('gallery_proj_2'), img: '/assets/gallery/vanity.jpg' },
+        { id: 3, title: t('gallery_proj_3'), img: '/assets/gallery/desk-suite.jpg' },
+        { id: 4, title: t('gallery_proj_4'), img: '/assets/gallery/media-unit.jpg' },
+        { id: 5, title: t('gallery_proj_5'), img: '/assets/gallery/scan-dining.jpg' },
+        { id: 6, title: t('gallery_proj_6'), img: '/assets/gallery/headboard.jpg' },
     ];
 
     return (
@@ -34,12 +34,12 @@ const Gallery = () => {
                             transition={{ delay: idx * 0.1 }}
                             className="gallery-item"
                         >
-                            <Link to={`/product/${project.id}`} style={{ display: 'block', height: '100%', width: '100%' }}>
+                            <div className="gallery-image-wrapper">
                                 <img src={project.img} alt={project.title} />
                                 <div className="gallery-overlay">
                                     <h3>{project.title}</h3>
                                 </div>
-                            </Link>
+                            </div>
                         </motion.div>
                     ))}
                 </div>

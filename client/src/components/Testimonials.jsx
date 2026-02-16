@@ -9,19 +9,19 @@ const Testimonials = () => {
 
     const reviews = [
         {
-            name: "Alessandro Rossi",
-            location: "Milan, Italy",
-            text: "The walnut desk I ordered is not just furniture; it's a piece of art that has transformed my office. The attention to detail is staggering."
+            name: t('test_1_name'),
+            location: t('test_1_loc'),
+            text: t('test_1_text')
         },
         {
-            name: "Sarah Jenkins",
-            location: "London, UK",
-            text: "Bespoke service at its finest. They kept me updated throughout the crafting process. Highly recommended for anyone seeking quality."
+            name: t('test_2_name'),
+            location: t('test_2_loc'),
+            text: t('test_2_text')
         },
         {
-            name: "Marcus Weber",
-            location: "Berlin, Germany",
-            text: "Incredible craftsmanship. The natural finish on the oak table highlights the wood's beauty perfectly. It will be in our family for ages."
+            name: t('test_3_name'),
+            location: t('test_3_loc'),
+            text: t('test_3_text')
         }
     ];
 

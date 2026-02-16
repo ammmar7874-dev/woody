@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -22,8 +22,8 @@ const ProductCard = ({ product }) => {
             </div>
             <div className="product-info">
                 <span className="product-category">{product.category}</span>
-                <h3>{product.name}</h3>
-                <p>{product.shortDesc}</p>
+                <h3>{product[`name_${i18n.language}`] || product.name}</h3>
+                <p>{product[`description_${i18n.language}`] || product.shortDesc || product.description}</p>
                 <div className="product-footer">
                     <span className="product-price">{product.price}</span>
                     <Link to={`/product/${product.id}`} className="icon-link">

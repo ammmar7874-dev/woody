@@ -7,15 +7,15 @@ import { doc, getDoc } from 'firebase/firestore';
 import './ProductDetail.css';
 import { useTranslation } from 'react-i18next';
 
-import QuoteModal from '../components/QuoteModal';
+import { useQuote } from '../context/QuoteContext.jsx';
 
 const ProductDetail = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState(0);
-    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+    const { openQuoteModal } = useQuote();
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -39,21 +39,17 @@ const ProductDetail = () => {
         window.scrollTo(0, 0);
     }, [id]);
 
-    if (loading) return <div className="loading" style={{ height: '50vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading product details...</div>;
-    if (!product) return <div className="loading" style={{ height: '50vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Product not found.</div>;
+    if (loading) return <div className="loading" style={{ height: '50vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{t('loading_product')}</div>;
+    if (!product) return <div className="loading" style={{ height: '50vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{t('product_not_found')}</div>;
 
-    // Mock multiple images
-    const images = [
-        product.image,
-        'https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1544457070-4cd773b4d71e?auto=format&fit=crop&q=80',
-    ];
+    // Use images from products array if available, otherwise fallback to the single image field
+    const images = product.images && product.images.length > 0 ? product.images : [product.image];
 
     return (
         <div className="product-detail-page">
             <div className="container">
                 <Link to="/" className="back-link">
-                    <ArrowLeft size={20} /> Back to Collection
+                    <ArrowLeft size={20} /> {t('btn_back')}
                 </Link>
 
                 <div className="product-layout">
@@ -67,22 +63,24 @@ const ProductDetail = () => {
                         >
                             <img src={images[selectedImage]} alt={product.name} />
                         </motion.div>
-                        <div className="thumbnail-list">
-                            {images.map((img, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`thumbnail ${selectedImage === idx ? 'active' : ''} `}
-                                    onClick={() => setSelectedImage(idx)}
-                                >
-                                    <img src={img} alt="" />
-                                </div>
-                            ))}
-                        </div>
+                        {images.length > 1 && (
+                            <div className="thumbnail-list">
+                                {images.map((img, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`thumbnail ${selectedImage === idx ? 'active' : ''} `}
+                                        onClick={() => setSelectedImage(idx)}
+                                    >
+                                        <img src={img} alt="" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="product-info-panel">
                         <span className="product-category-badge">{product.category}</span>
-                        <h1>{product.name}</h1>
+                        <h1>{product[`name_${i18n.language}`] || product.name}</h1>
                         <div className="rating">
                             <Star size={18} fill="#c5a059" color="#c5a059" />
                             <Star size={18} fill="#c5a059" color="#c5a059" />
@@ -94,46 +92,43 @@ const ProductDetail = () => {
 
                         <p className="price">{product.price}</p>
                         <p className="description">
-                            {product.description} Handcrafted from sustainable sources, this piece embodies the true spirit of artisanal woodworking. Custom dimensions available upon request.
+                            {product[`description_${i18n.language}`] || product.description}
                         </p>
 
                         <div className="specs-box">
                             <h3>{t('pd_desc')}</h3>
                             <ul>
-                                <li><strong>{t('pd_material')}:</strong> Premium {product.name.includes('Walnut') ? 'Walnut' : 'Oak'}</li>
-                                <li><strong>{t('pd_finish')}:</strong> Matte Oil Wax</li>
-                                <li><strong>{t('pd_dimensions')}:</strong> Custom to fit your space</li>
-                                <li><strong>Production Time:</strong> 4-6 Weeks</li>
+                                <li><strong>{t('pd_material')}:</strong> {product.name.includes('Walnut') || product.name.includes('Ceviz') ? (i18n.language === 'tr' ? 'Ceviz' : 'Walnut') : (i18n.language === 'tr' ? 'Meşe' : 'Oak')}</li>
+                                <li><strong>{t('pd_finish')}:</strong> {i18n.language === 'tr' ? 'Mat Yağ Vakslı' : 'Matte Oil Wax'}</li>
+                                <li><strong>{t('pd_dimensions')}:</strong> {i18n.language === 'tr' ? 'Alanınıza göre özel ölçü' : 'Custom to fit your space'}</li>
+                                <li><strong>{t('pd_production_time')}:</strong> 4-6 {t('pd_weeks')}</li>
                             </ul>
                         </div>
 
                         <div className="action-area">
                             <button
                                 className="primary-btn request-offer-btn"
-                                onClick={() => setIsQuoteModalOpen(true)}
+                                onClick={() => openQuoteModal('product', product)}
                             >
                                 {t('cta_quote')}
                             </button>
                             <p className="secure-note">
-                                <Shield size={16} /> Secure Artisanal Guarantee
+                                <Shield size={16} /> {t('pd_guarantee')}
                             </p>
                         </div>
 
                         <div className="delivery-info">
                             <Truck size={24} />
                             <div>
-                                <h4>White Glove Delivery</h4>
-                                <p>We deliver and assemble right in your room of choice.</p>
+                                <h4>{t('pd_white_glove')}</h4>
+                                <p>{t('pd_delivery_desc')}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <QuoteModal
-                isOpen={isQuoteModalOpen}
-                onClose={() => setIsQuoteModalOpen(false)}
-            />
+            {/* Modal is handled globally by Navbar */}
         </div>
     );
 };

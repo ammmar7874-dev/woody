@@ -51,7 +51,7 @@ const Home = () => {
                     </motion.div>
 
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</div>
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>{t('loading_product')}</div>
                     ) : (
                         <div className="products-grid">
                             {products.length > 0 ? (

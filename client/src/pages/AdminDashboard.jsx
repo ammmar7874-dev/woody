@@ -19,21 +19,23 @@ const AdminDashboard = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [products, setProducts] = useState([]);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [imageFile, setImageFile] = useState(null);
+    const [imageFiles, setImageFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [newProduct, setNewProduct] = useState({
-        name: '', price: '', category: 'Living', stock: '', description: '', image: ''
+        name_en: '', name_tr: '', price: '', category: 'Living', stock: '',
+        description_en: '', description_tr: '', image: '', images: []
     });
     const [editingId, setEditingId] = useState(null);
     const [errors, setErrors] = useState({});
 
     const validateForm = () => {
         const newErrors = {};
-        if (!newProduct.name.trim()) newErrors.name = "Product name is required";
+        if (!newProduct.name_en?.trim()) newErrors.name_en = "English name is required";
+        if (!newProduct.name_tr?.trim()) newErrors.name_tr = "Turkish name is required";
         if (!newProduct.price || isNaN(newProduct.price) || Number(newProduct.price) <= 0) newErrors.price = "Valid price is required";
         if (!newProduct.stock || isNaN(newProduct.stock) || Number(newProduct.stock) < 0) newErrors.stock = "Valid stock is required";
         if (!newProduct.category) newErrors.category = "Category is required";
-        if (!imageFile && !newProduct.image) newErrors.image = "Product image is required";
+        if (imageFiles.length === 0 && !newProduct.image) newErrors.image = "At least one product image is required";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -55,21 +57,29 @@ const AdminDashboard = () => {
 
         setIsUploading(true);
         try {
-            let imageUrl = newProduct.image;
+            let allImages = [...(newProduct.images || [])];
 
-            if (imageFile) {
-                // Convert file to Base64
-                const reader = new FileReader();
-                imageUrl = await new Promise((resolve, reject) => {
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
-                    reader.readAsDataURL(imageFile);
+            if (imageFiles.length > 0) {
+                const uploadPromises = imageFiles.map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                        reader.readAsDataURL(file);
+                    });
                 });
+                const newImageUrls = await Promise.all(uploadPromises);
+                allImages = [...allImages, ...newImageUrls];
             }
+
+            const mainImage = allImages.length > 0 ? allImages[0] : '';
 
             const productData = {
                 ...newProduct,
-                image: imageUrl,
+                name: newProduct.name_en, // Default for backward compatibility
+                description: newProduct.description_en, // Default for backward compatibility
+                image: mainImage,
+                images: allImages,
                 price: Number(newProduct.price),
                 stock: Number(newProduct.stock),
                 status: Number(newProduct.stock) > 0 ? 'Active' : 'Out of Stock',
@@ -95,22 +105,29 @@ const AdminDashboard = () => {
     };
 
     const resetForm = () => {
-        setNewProduct({ name: '', price: '', category: 'Living', stock: '', description: '', image: '' });
-        setImageFile(null);
+        setNewProduct({
+            name_en: '', name_tr: '', price: '', category: 'Living', stock: '',
+            description_en: '', description_tr: '', image: '', images: []
+        });
+        setImageFiles([]);
         setEditingId(null);
         setErrors({});
     };
 
     const handleEditClick = (product) => {
-        setNewProduct(product);
+        setNewProduct({
+            ...product,
+            images: product.images || (product.image ? [product.image] : [])
+        });
         setEditingId(product.id);
         setActiveTab('addProduct');
-        setImageFile(null); // Reset file input, use existing image by default
+        setImageFiles([]);
     };
 
     const handleImageChange = (e) => {
-        if (e.target.files[0]) {
-            setImageFile(e.target.files[0]);
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            setImageFiles(prev => [...prev, ...files]);
         }
     };
 
@@ -136,6 +153,19 @@ const AdminDashboard = () => {
             console.error("Error updating status:", error);
             alert("Failed to update status");
         }
+    };
+
+    const removeExistingImage = (index) => {
+        const updatedImages = newProduct.images.filter((_, i) => i !== index);
+        setNewProduct({
+            ...newProduct,
+            images: updatedImages,
+            image: updatedImages.length > 0 ? updatedImages[0] : ''
+        });
+    };
+
+    const removeNewFile = (index) => {
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const [requests, setRequests] = useState([]);
@@ -307,18 +337,33 @@ const AdminDashboard = () => {
                             <div className="product-form-card">
                                 <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Product Details</h3>
                                 <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
-                                    <div className={`input-field ${errors.name ? 'error' : ''}`}>
-                                        <label>Product Name</label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. Handmade Oak Desk"
-                                            value={newProduct.name}
-                                            onChange={(e) => {
-                                                setNewProduct({ ...newProduct, name: e.target.value });
-                                                if (errors.name) setErrors({ ...errors, name: null });
-                                            }}
-                                        />
-                                        {errors.name && <span className="error-message"><AlertCircle size={14} /> {errors.name}</span>}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                        <div className={`input-field ${errors.name_en ? 'error' : ''}`}>
+                                            <label>Product Name (EN)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Handmade Oak Desk"
+                                                value={newProduct.name_en}
+                                                onChange={(e) => {
+                                                    setNewProduct({ ...newProduct, name_en: e.target.value });
+                                                    if (errors.name_en) setErrors({ ...errors, name_en: null });
+                                                }}
+                                            />
+                                            {errors.name_en && <span className="error-message"><AlertCircle size={14} /> {errors.name_en}</span>}
+                                        </div>
+                                        <div className={`input-field ${errors.name_tr ? 'error' : ''}`}>
+                                            <label>Ürün Adı (TR)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="örn. El Yapımı Meşe Masa"
+                                                value={newProduct.name_tr}
+                                                onChange={(e) => {
+                                                    setNewProduct({ ...newProduct, name_tr: e.target.value });
+                                                    if (errors.name_tr) setErrors({ ...errors, name_tr: null });
+                                                }}
+                                            />
+                                            {errors.name_tr && <span className="error-message"><AlertCircle size={14} /> {errors.name_tr}</span>}
+                                        </div>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -364,14 +409,25 @@ const AdminDashboard = () => {
                                         </select>
                                     </div>
 
-                                    <div className="input-field full-width">
-                                        <label>Description</label>
-                                        <textarea
-                                            rows="5"
-                                            placeholder="Describe the product features, materials, and care instructions..."
-                                            value={newProduct.description || ''}
-                                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                                        ></textarea>
+                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+                                        <div className="input-field">
+                                            <label>Description (EN)</label>
+                                            <textarea
+                                                rows="5"
+                                                placeholder="Describe the product in English..."
+                                                value={newProduct.description_en || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, description_en: e.target.value })}
+                                            ></textarea>
+                                        </div>
+                                        <div className="input-field">
+                                            <label>Açıklama (TR)</label>
+                                            <textarea
+                                                rows="5"
+                                                placeholder="Ürün açıklamasını Türkçe giriniz..."
+                                                value={newProduct.description_tr || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, description_tr: e.target.value })}
+                                            ></textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -379,35 +435,39 @@ const AdminDashboard = () => {
                             {/* Right Column: Media */}
                             <div className="product-media-card">
                                 <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Product Media</h3>
-                                <div className={`image-upload-wrapper ${errors.image ? 'error' : ''}`} style={{ borderColor: errors.image ? '#e53e3e' : '' }}>
-                                    {(imageFile || newProduct.image) ? (
-                                        <div className="image-preview-container">
-                                            <img src={imageFile ? URL.createObjectURL(imageFile) : newProduct.image} alt="Preview" />
-                                            <button type="button" className="remove-image-btn" onClick={() => {
-                                                setImageFile(null);
-                                                setNewProduct({ ...newProduct, image: '' });
-                                            }}>
-                                                <X size={18} />
+
+                                <div className="multi-image-preview-grid">
+                                    {/* Existing Images */}
+                                    {newProduct.images && newProduct.images.map((img, idx) => (
+                                        <div key={`existing-${idx}`} className="image-preview-container small">
+                                            <img src={img} alt="Existing" />
+                                            <button type="button" className="remove-image-btn" onClick={() => removeExistingImage(idx)}>
+                                                <X size={14} />
                                             </button>
                                         </div>
-                                    ) : (
-                                        <>
-                                            <Upload size={40} className="upload-icon" />
-                                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#4a5568' }}>Drop image here</h4>
-                                            <p className="text-sm" style={{ marginBottom: '1.5rem' }}>or click to browse</p>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => {
-                                                    if (e.target.files[0]) {
-                                                        setImageFile(e.target.files[0]);
-                                                        if (errors.image) setErrors({ ...errors, image: null });
-                                                    }
-                                                }}
-                                            />
-                                            <p className="text-xs">Supports: JPG, PNG, WEBP</p>
-                                        </>
-                                    )}
+                                    ))}
+
+                                    {/* Newly Selected Files */}
+                                    {imageFiles.map((file, idx) => (
+                                        <div key={`new-${idx}`} className="image-preview-container small">
+                                            <img src={URL.createObjectURL(file)} alt="New" />
+                                            <button type="button" className="remove-image-btn" onClick={() => removeNewFile(idx)}>
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {/* Add More Button / Drop Zone */}
+                                    <div className={`image-upload-wrapper mini ${errors.image ? 'error' : ''}`}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleImageChange}
+                                        />
+                                        <Plus size={24} />
+                                        <span style={{ fontSize: '0.7rem', marginTop: '0.2rem' }}>Add</span>
+                                    </div>
                                 </div>
                                 {errors.image && <span className="error-message" style={{ justifyContent: 'center' }}><AlertCircle size={14} /> {errors.image}</span>}
 

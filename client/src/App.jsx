@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Gallery from './pages/Gallery';
 import About from './pages/About';
+import Collection from './pages/Collection';
 import AdminDashboard from './pages/AdminDashboard';
 import Footer from './components/Footer';
 import './App.css';
@@ -27,6 +28,7 @@ function App() {
                     <main>
                         <Routes>
                             <Route path="/" element={<Home />} />
+                            <Route path="/collection" element={<Collection />} />
                             <Route path="/product/:id" element={<ProductDetail />} />
                             <Route path="/gallery" element={<Gallery />} />
                             <Route path="/about" element={<About />} />

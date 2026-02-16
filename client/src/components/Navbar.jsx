@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe } from 'lucide-react';
 import QuoteModal from './QuoteModal';
-import GoogleTranslate from './GoogleTranslate';
+import LanguageSelector from './LanguageSelector';
 import './Navbar.css';
 import { useQuote } from '../context/QuoteContext.jsx';
 
@@ -39,9 +39,7 @@ const Navbar = () => {
         }
     }, [location]);
 
-    const toggleLanguage = () => {
-        i18n.changeLanguage(i18n.language === 'en' ? 'tr' : 'en');
-    };
+
 
     const handleNavigation = (path) => {
         setIsMenuOpen(false);
@@ -62,7 +60,7 @@ const Navbar = () => {
 
     const navLinks = [
         { name: t('nav_home'), path: '/' },
-        { name: t('nav_products'), path: '/#products' },
+        { name: t('nav_products'), path: '/collection' },
         { name: t('nav_gallery'), path: '/gallery' },
         { name: t('nav_about'), path: '/about' },
     ];
@@ -102,16 +100,7 @@ const Navbar = () => {
 
 
                         <div className="nav-actions">
-                            {/* Native Language Toggle */}
-                            <button onClick={toggleLanguage} className="lang-toggle">
-                                <Globe size={18} />
-                                <span>{i18n.language.toUpperCase()}</span>
-                            </button>
-
-                            {/* Google Translate Widget */}
-                            <div className="google-translate-wrapper">
-                                <GoogleTranslate />
-                            </div>
+                            <LanguageSelector />
 
                             <button
                                 className="dashboard-btn-nav"
@@ -124,7 +113,7 @@ const Navbar = () => {
                             </button>
                             <button
                                 className="quote-btn-nav"
-                                onClick={openQuoteModal}
+                                onClick={() => openQuoteModal('special')}
                             >
                                 {t('cta_quote')}
                             </button>
@@ -150,14 +139,16 @@ const Navbar = () => {
                                         <span>{link.name}</span>
                                     </li>
                                 ))}
-                                <li onClick={toggleLanguage}>{i18n.language.toUpperCase() === 'EN' ? 'Turkish' : 'English'}</li>
-                                <li onClick={() => { setIsMenuOpen(false); navigate('/admin'); }}>Dashboard</li>
+                                <li className="mobile-lang-container">
+                                    <LanguageSelector mobile={true} />
+                                </li>
+                                <li className="mobile-dashboard-link" onClick={() => { setIsMenuOpen(false); navigate('/admin'); }}>Dashboard</li>
                                 <li>
                                     <button
                                         className="quote-btn-mobile"
                                         onClick={() => {
                                             setIsMenuOpen(false);
-                                            openQuoteModal();
+                                            openQuoteModal('special');
                                         }}
                                     >
                                         {t('cta_quote')}

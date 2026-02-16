@@ -12,25 +12,25 @@ const DesignJourney = () => {
             id: 1,
             icon: <Coffee size={40} />,
             title: t('step_1'),
-            desc: "We start with a conversation over coffee, understanding your needs and space."
+            desc: t('step_1_desc')
         },
         {
             id: 2,
             icon: <Pencil size={40} />,
             title: t('step_2'),
-            desc: "Collaborative sketching and 3D modeling to visualize your custom piece."
+            desc: t('step_2_desc')
         },
         {
             id: 3,
             icon: <Hammer size={40} />,
             title: t('step_3'),
-            desc: "Our master artisans bring the design to life using traditional techniques."
+            desc: t('step_3_desc')
         },
         {
             id: 4,
             icon: <Truck size={40} />,
             title: t('step_4'),
-            desc: "Careful delivery and white-glove integration into your beautiful home."
+            desc: t('step_4_desc')
         }
     ];
 
@@ -39,7 +39,7 @@ const DesignJourney = () => {
             <div className="container">
                 <div className="journey-header">
                     <h2 className="section-title">{t('steps_title')}</h2>
-                    <p className="journey-subtitle-text">From raw timber to your heirloom piece.</p>
+                    <p className="journey-subtitle-text">{t('steps_subtitle')}</p>
                 </div>
 
                 <div className="journey-timeline">

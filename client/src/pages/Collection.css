@@ -1,0 +1,72 @@
+/* Collection.css */
+.collection-page {
+    padding-top: 80px;
+    /* Adjust for fixed navbar */
+    min-height: 100vh;
+}
+
+.collection-hero {
+    background: #fdfdfd;
+    padding: 6rem 0 4rem;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: center;
+}
+
+.collection-header {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.collection-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    color: #2d241e;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.collection-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    line-height: 1.6;
+}
+
+.collection-grid-section {
+    padding: 5rem 0;
+}
+
+.collection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3rem;
+}
+
+.collection-loading,
+.no-products {
+    text-align: center;
+    padding: 5rem;
+    font-size: 1.2rem;
+    color: #999;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .collection-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .collection-title {
+        font-size: 2.5rem;
+    }
+
+    .collection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .collection-hero {
+        padding: 4rem 1rem 3rem;
+    }
+}
