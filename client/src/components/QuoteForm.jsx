@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Upload, Send, CheckCircle } from 'lucide-react';
 import './QuoteForm.css';
 
-import { db } from '../firebase/config';
+import { db, storage } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 import { useQuote } from '../context/QuoteContext.jsx';
 
@@ -19,6 +20,7 @@ const QuoteForm = ({ onClose, isModal }) => {
         phone: '',
         description: '',
         file: null,
+        fileBlob: null,
         fileName: null,
         timeline: '1-2 Weeks',
         whereToOrder: '',
@@ -35,14 +37,32 @@ const QuoteForm = ({ onClose, isModal }) => {
         setIsSubmitting(true);
 
         try {
+            let fileUrl = null;
+
+            // Upload file to Firebase Storage if it exists
+            if (formData.fileBlob) {
+                const storageRef = ref(storage, `quotes/${Date.now()}_${formData.fileName}`);
+                const snapshot = await uploadBytes(storageRef, formData.fileBlob);
+                fileUrl = await getDownloadURL(snapshot.ref);
+            }
+
             const submissionData = {
-                ...formData,
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                description: formData.description,
+                fileName: formData.fileName,
+                file: fileUrl, // Store the URL instead of base64
+                timeline: formData.timeline,
+                whereToOrder: formData.whereToOrder,
+                extraComments: formData.extraComments,
                 quoteMode,
                 productDetails: productData ? {
                     id: productData.id,
                     name: productData.name,
                     name_en: productData.name_en || '',
-                    name_tr: productData.name_tr || ''
+                    name_tr: productData.name_tr || '',
+                    image: productData.image || ''
                 } : null,
                 createdAt: new Date().toISOString(),
                 status: 'pending'
@@ -72,7 +92,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                     <button className="primary-btn" onClick={() => {
                         setIsSubmitted(false);
                         setStep(1);
-                        setFormData({ ...formData, description: '', file: null });
+                        setFormData({ ...formData, description: '', file: null, fileBlob: null, fileName: null });
                     }}>{t('q_new')}</button>
                     {isModal && (
                         <button className="secondary-btn" onClick={onClose} style={{ marginTop: '1rem' }}>
@@ -215,11 +235,11 @@ const QuoteForm = ({ onClose, isModal }) => {
                                         onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    setFormData({ ...formData, file: reader.result, fileName: file.name });
-                                                };
-                                                reader.readAsDataURL(file);
+                                                setFormData({
+                                                    ...formData,
+                                                    fileBlob: file,
+                                                    fileName: file.name
+                                                });
                                             }
                                         }}
                                     />

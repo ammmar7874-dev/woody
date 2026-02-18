@@ -98,9 +98,9 @@ const ProductDetail = () => {
                         <div className="specs-box">
                             <h3>{t('pd_desc')}</h3>
                             <ul>
-                                <li><strong>{t('pd_material')}:</strong> {product.name.includes('Walnut') || product.name.includes('Ceviz') ? (i18n.language === 'tr' ? 'Ceviz' : 'Walnut') : (i18n.language === 'tr' ? 'Meşe' : 'Oak')}</li>
-                                <li><strong>{t('pd_finish')}:</strong> {i18n.language === 'tr' ? 'Mat Yağ Vakslı' : 'Matte Oil Wax'}</li>
-                                <li><strong>{t('pd_dimensions')}:</strong> {i18n.language === 'tr' ? 'Alanınıza göre özel ölçü' : 'Custom to fit your space'}</li>
+                                <li><strong>{t('pd_material')}:</strong> {product[`material_${i18n.language}`] || product.material_en || (product.name.includes('Walnut') || product.name.includes('Ceviz') ? (i18n.language === 'tr' ? 'Ceviz' : 'Walnut') : (i18n.language === 'tr' ? 'Meşe' : 'Oak'))}</li>
+                                <li><strong>{t('pd_finish')}:</strong> {product[`finishing_${i18n.language}`] || product.finishing_en || (i18n.language === 'tr' ? 'Mat Yağ Vakslı' : 'Matte Oil Wax')}</li>
+                                <li><strong>{t('pd_dimensions')}:</strong> {product[`dimensions_${i18n.language}`] || (i18n.language === 'tr' ? 'Alanınıza göre özel ölçü' : 'Custom to fit your space')}</li>
                                 <li><strong>{t('pd_production_time')}:</strong> 4-6 {t('pd_weeks')}</li>
                             </ul>
                         </div>

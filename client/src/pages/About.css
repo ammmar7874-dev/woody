@@ -35,6 +35,10 @@
     align-items: center;
 }
 
+.story-content {
+    padding-left: 3rem;
+}
+
 .story-content p {
     color: var(--text-muted);
     font-size: 1.1rem;

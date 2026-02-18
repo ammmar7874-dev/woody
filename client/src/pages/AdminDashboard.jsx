@@ -11,6 +11,7 @@ import './AdminDashboard.css';
 
 import { db, auth, storage } from '../firebase/config';
 import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signOut } from 'firebase/auth';
 
 const AdminDashboard = () => {
@@ -23,7 +24,11 @@ const AdminDashboard = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [newProduct, setNewProduct] = useState({
         name_en: '', name_tr: '', price: '', category: 'Living', stock: '',
-        description_en: '', description_tr: '', image: '', images: []
+        description_en: '', description_tr: '',
+        dimensions_en: '', dimensions_tr: '',
+        finishing_en: '', finishing_tr: '',
+        material_en: '', material_tr: '',
+        image: '', images: []
     });
     const [editingId, setEditingId] = useState(null);
     const [errors, setErrors] = useState({});
@@ -60,13 +65,10 @@ const AdminDashboard = () => {
             let allImages = [...(newProduct.images || [])];
 
             if (imageFiles.length > 0) {
-                const uploadPromises = imageFiles.map(file => {
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = error => reject(error);
-                        reader.readAsDataURL(file);
-                    });
+                const uploadPromises = imageFiles.map(async (file) => {
+                    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    return await getDownloadURL(snapshot.ref);
                 });
                 const newImageUrls = await Promise.all(uploadPromises);
                 allImages = [...allImages, ...newImageUrls];
@@ -107,7 +109,11 @@ const AdminDashboard = () => {
     const resetForm = () => {
         setNewProduct({
             name_en: '', name_tr: '', price: '', category: 'Living', stock: '',
-            description_en: '', description_tr: '', image: '', images: []
+            description_en: '', description_tr: '',
+            dimensions_en: '', dimensions_tr: '',
+            finishing_en: '', finishing_tr: '',
+            material_en: '', material_tr: '',
+            image: '', images: []
         });
         setImageFiles([]);
         setEditingId(null);
@@ -413,7 +419,7 @@ const AdminDashboard = () => {
                                         <div className="input-field">
                                             <label>Description (EN)</label>
                                             <textarea
-                                                rows="5"
+                                                rows="3"
                                                 placeholder="Describe the product in English..."
                                                 value={newProduct.description_en || ''}
                                                 onChange={(e) => setNewProduct({ ...newProduct, description_en: e.target.value })}
@@ -422,11 +428,74 @@ const AdminDashboard = () => {
                                         <div className="input-field">
                                             <label>Açıklama (TR)</label>
                                             <textarea
-                                                rows="5"
+                                                rows="3"
                                                 placeholder="Ürün açıklamasını Türkçe giriniz..."
                                                 value={newProduct.description_tr || ''}
                                                 onChange={(e) => setNewProduct({ ...newProduct, description_tr: e.target.value })}
                                             ></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
+                                        <div className="input-field">
+                                            <label>Dimensions (EN)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. 120x60x75 cm"
+                                                value={newProduct.dimensions_en || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, dimensions_en: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-field">
+                                            <label>Ölçüler (TR)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="örn. 120x60x75 cm"
+                                                value={newProduct.dimensions_tr || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, dimensions_tr: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
+                                        <div className="input-field">
+                                            <label>Finishing (EN)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Matte Oil"
+                                                value={newProduct.finishing_en || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, finishing_en: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-field">
+                                            <label>Bitiş / Cila (TR)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="örn. Mat Yağ"
+                                                value={newProduct.finishing_tr || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, finishing_tr: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
+                                        <div className="input-field">
+                                            <label>Material (EN)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Solid Walnut"
+                                                value={newProduct.material_en || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, material_en: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-field">
+                                            <label>Malzeme (TR)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="örn. Masif Ceviz"
+                                                value={newProduct.material_tr || ''}
+                                                onChange={(e) => setNewProduct({ ...newProduct, material_tr: e.target.value })}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -528,11 +597,22 @@ const AdminDashboard = () => {
                                             </td>
                                             <td>
                                                 <div className="text-sm">
+                                                    {r.productDetails && (
+                                                        <div className="requested-item-preview" style={{ display: r.productDetails ? 'flex' : 'none', alignItems: 'center', gap: '10px', marginBottom: '8px', padding: '5px', background: '#f8fafc', borderRadius: '6px' }}>
+                                                            {r.productDetails.image && (
+                                                                <img src={r.productDetails.image} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                                                            )}
+                                                            <div>
+                                                                <div style={{ fontWeight: 600, fontSize: '0.75rem' }}>{r.productDetails.name_en || r.productDetails.name}</div>
+                                                                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Product Request</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                     <strong>Timeline:</strong> {r.timeline}<br />
                                                     <span className="truncate-text" title={r.description}>{r.description && r.description.substring(0, 30)}...</span>
                                                     {r.fileName && (
                                                         <div style={{ marginTop: '4px' }}>
-                                                            <a href={r.file} download={r.fileName} className="text-xs" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
+                                                            <a href={r.file} target="_blank" rel="noopener noreferrer" className="text-xs" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
                                                                 View Attachment ({r.fileName})
                                                             </a>
                                                         </div>
