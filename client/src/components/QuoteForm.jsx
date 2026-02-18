@@ -258,7 +258,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                                 <button type="button" className="secondary-btn" onClick={handleBack}>{t('q_back')}</button>
                                 <button type="submit" className="primary-btn submit-btn" disabled={isSubmitting}>
                                     <Send size={18} />
-                                    {isSubmitting ? (i18n.language === 'tr' ? 'Göndariliyor...' : 'Sending...') : t('q_submit')}
+                                    {isSubmitting ? (i18n.language === 'tr' ? 'Gönderiliyor...' : 'Sending...') : t('q_submit')}
                                 </button>
                             </div>
                         </motion.div>
