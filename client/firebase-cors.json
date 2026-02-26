@@ -1,0 +1,22 @@
+[
+    {
+        "origin": [
+            "https://woodify-premium.netlify.app",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://192.168.100.27:5173"
+        ],
+        "method": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "HEAD"
+        ],
+        "responseHeader": [
+            "Content-Type",
+            "x-goog-resumable"
+        ],
+        "maxAgeSeconds": 3600
+    }
+]

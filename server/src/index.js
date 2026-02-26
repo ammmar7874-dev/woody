@@ -25,6 +25,7 @@ connectDB();
 
 // Routes
 app.use('/api/quotes', require('./routes/quotes'));
+app.use('/api/upload', require('./routes/upload'));
 app.get('/', (req, res) => {
     res.send('Woodify API is running (Status: ' + (mongoose.connection.readyState === 1 ? 'Online' : 'Offline') + ')');
 });

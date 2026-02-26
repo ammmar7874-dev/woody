@@ -1,108 +1,160 @@
 .product-card {
-    background: white;
-    transition: var(--transition-smooth);
-    border-radius: 8px;
-    /* Added rounding */
+    background: var(--bg-white);
+    border-radius: var(--border-radius);
     overflow: hidden;
-    /* Ensure children respect rounding */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-premium);
+    transition: var(--transition-smooth);
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.product-image-link {
+    display: block;
+    width: 100%;
 }
 
 .product-image-box {
     position: relative;
-    aspect-ratio: 4/5;
+    aspect-ratio: 1 / 1.1;
     overflow: hidden;
-    background: #eee;
-    border-radius: 8px 8px 0 0;
-    /* Rounded top corners */
+    background: #fdfdfd;
 }
 
 .product-image-box img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.product-card:hover .product-image-box img {
-    transform: scale(1.1);
+.product-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(45, 36, 30, 0.9);
+    color: var(--secondary);
+    padding: 0.3rem 0.8rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    z-index: 2;
+    border-radius: 2px;
 }
 
 .product-hover-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(45, 36, 30, 0.4);
+    inset: 0;
+    background: rgba(45, 36, 30, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transition: var(--transition-smooth);
+    z-index: 3;
+}
+
+.view-details-txt {
+    background: var(--bg-white);
+    color: var(--primary);
+    padding: 0.8rem 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transform: translateY(15px);
+    transition: var(--transition-smooth);
+}
+
+.product-card:hover .product-image-box img {
+    transform: scale(1.08);
 }
 
 .product-card:hover .product-hover-overlay {
     opacity: 1;
 }
 
-.details-btn {
-    background: white;
-    color: var(--primary);
-    padding: 1rem 2rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.8rem;
-    transform: translateY(20px);
-    transition: var(--transition-smooth);
-}
-
-.product-card:hover .details-btn {
+.product-card:hover .view-details-txt {
     transform: translateY(0);
 }
 
 .product-info {
-    padding: 1.5rem 1.25rem;
-    /* Added horizontal padding */
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 1.2rem;
 }
 
-.product-category {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: block;
-    margin-bottom: 0.5rem;
+.product-main-info {
+    flex-grow: 1;
 }
 
-.product-info h3 {
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
+.product-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: var(--primary);
+    margin-bottom: 0.6rem;
+    line-height: 1.3;
+    font-weight: 600;
 }
 
-.product-info p {
-    font-size: 0.9rem;
+.product-description {
+    font-size: 0.85rem;
     color: var(--text-muted);
-    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 2.7em;
+    /* approx 2 lines */
 }
 
 .product-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.product-price {
+.price-wrapper {
+    color: var(--primary);
     font-weight: 700;
-    color: var(--primary);
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
 }
 
-.icon-link {
-    color: var(--primary);
-}
-
-.icon-link:hover {
-    transform: translateX(5px);
+.currency {
+    font-size: 0.8rem;
     color: var(--secondary);
+}
+
+.price-value {
+    font-size: 1.2rem;
+}
+
+.explore-link {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    transition: var(--transition-smooth);
+}
+
+.explore-link:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: rotate(-45deg);
 }

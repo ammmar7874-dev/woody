@@ -81,7 +81,7 @@ const Hero = () => {
                             whileHover={{ scale: 1.05, backgroundColor: 'var(--primary-light)' }}
                             whileTap={{ scale: 0.95 }}
                             className="primary-btn"
-                            onClick={openQuoteModal}
+                            onClick={() => openQuoteModal('special')}
                         >
                             {t('cta_quote')}
                         </motion.button>

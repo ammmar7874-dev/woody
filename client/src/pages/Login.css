@@ -84,3 +84,50 @@
     font-size: 0.8rem;
     color: #aaa;
 }
+
+/* Dev Bypass */
+.dev-bypass {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.dev-divider {
+    position: relative;
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.dev-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.dev-divider span {
+    position: relative;
+    background: white;
+    padding: 0 1rem;
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+.dev-access-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background: transparent;
+    border: 1px dashed var(--secondary);
+    color: var(--secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.dev-access-btn:hover {
+    background: rgba(184, 134, 11, 0.05);
+    border-style: solid;
+}

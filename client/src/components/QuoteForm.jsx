@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Upload, Send, CheckCircle } from 'lucide-react';
 import './QuoteForm.css';
 
-import { db, storage } from '../firebase/config';
+import { db } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { fileToBase64 } from '../utils/fileToBase64';
+import { compressImage } from '../utils/compressImage';
 
 import { useQuote } from '../context/QuoteContext.jsx';
 
@@ -39,11 +40,13 @@ const QuoteForm = ({ onClose, isModal }) => {
         try {
             let fileUrl = null;
 
-            // Upload file to Firebase Storage if it exists
+            // Convert file to base64 with compression (if it's an image)
             if (formData.fileBlob) {
-                const storageRef = ref(storage, `quotes/${Date.now()}_${formData.fileName}`);
-                const snapshot = await uploadBytes(storageRef, formData.fileBlob);
-                fileUrl = await getDownloadURL(snapshot.ref);
+                if (formData.fileBlob.type.startsWith('image/')) {
+                    fileUrl = await compressImage(formData.fileBlob);
+                } else {
+                    fileUrl = await fileToBase64(formData.fileBlob);
+                }
             }
 
             const submissionData = {
@@ -62,11 +65,22 @@ const QuoteForm = ({ onClose, isModal }) => {
                     name: productData.name,
                     name_en: productData.name_en || '',
                     name_tr: productData.name_tr || '',
-                    image: productData.image || ''
+                    image: productData.image || '',
+                    price: productData.price || 0
                 } : null,
                 createdAt: new Date().toISOString(),
                 status: 'pending'
             };
+
+            // Firestore Size Check (1MB Limit)
+            const dataSize = new Blob([JSON.stringify(submissionData)]).size;
+            if (dataSize > 1000000) {
+                alert(i18n.language === 'tr' ?
+                    "Hata: Dosya çok büyük. Lütfen daha küçük bir dosya seçin (Maksimum 1MB)." :
+                    "Error: File is too large. Please select a smaller file (Maximum 1MB).");
+                setIsSubmitting(false);
+                return;
+            }
 
             await addDoc(collection(db, "quotes"), submissionData);
             setIsSubmitted(true);

@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, LayoutDashboard } from 'lucide-react';
 import QuoteModal from './QuoteModal';
 import LanguageSelector from './LanguageSelector';
 import './Navbar.css';
 import { useQuote } from '../context/QuoteContext.jsx';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
     const { t, i18n } = useTranslation();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    // const [isQuoteOpen, setIsQuoteOpen] = useState(false); // Removed local state
     const { isQuoteOpen, openQuoteModal, closeQuoteModal } = useQuote();
+    const { currentUser } = useAuth();
+    const isDevAdmin = sessionStorage.getItem('dev_admin') === 'true';
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -38,8 +40,6 @@ const Navbar = () => {
             }
         }
     }, [location]);
-
-
 
     const handleNavigation = (path) => {
         setIsMenuOpen(false);
@@ -101,6 +101,15 @@ const Navbar = () => {
 
                         <div className="nav-actions">
                             <LanguageSelector />
+                            {(currentUser || isDevAdmin) && (
+                                <button
+                                    className="dashboard-btn-nav"
+                                    onClick={() => navigate('/admin')}
+                                    title="Admin Dashboard"
+                                >
+                                    <LayoutDashboard size={18} />
+                                </button>
+                            )}
                             <button
                                 className="quote-btn-nav"
                                 onClick={() => openQuoteModal('special')}
@@ -129,6 +138,11 @@ const Navbar = () => {
                                         <span>{link.name}</span>
                                     </li>
                                 ))}
+                                {(currentUser || isDevAdmin) && (
+                                    <li onClick={() => handleNavigation('/admin')} className="mobile-dashboard-link">
+                                        <span>Dashboard</span>
+                                    </li>
+                                )}
                                 <li className="mobile-lang-container">
                                     <LanguageSelector mobile={true} />
                                 </li>

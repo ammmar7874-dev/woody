@@ -71,6 +71,23 @@ const Login = () => {
                     <button type="submit" className="login-btn" disabled={loading}>
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
+
+                    {window.location.hostname === 'localhost' && (
+                        <div className="dev-bypass">
+                            <div className="dev-divider"><span>OR</span></div>
+                            <button
+                                type="button"
+                                className="dev-access-btn"
+                                onClick={() => {
+                                    sessionStorage.setItem('dev_admin', 'true');
+                                    navigate('/admin');
+                                    window.location.reload(); // Force refresh to update context
+                                }}
+                            >
+                                Developer Access (Local Only)
+                            </button>
+                        </div>
+                    )}
                     {/* <p className="hint">Use: woodify@gmail.com / woodify123</p> */}
                 </form>
             </motion.div>

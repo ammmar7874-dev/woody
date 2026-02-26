@@ -10,7 +10,9 @@ export const QuoteProvider = ({ children }) => {
     const [productData, setProductData] = useState(null);
 
     const openQuoteModal = (mode = 'special', product = null) => {
-        setQuoteMode(mode);
+        // Ensure mode is a string (prevents issues if used directly as event handler)
+        const validMode = typeof mode === 'string' ? mode : 'special';
+        setQuoteMode(validMode);
         setProductData(product);
         setIsQuoteOpen(true);
     };

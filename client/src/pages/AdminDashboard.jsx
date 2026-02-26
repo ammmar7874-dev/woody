@@ -9,10 +9,11 @@ import {
 } from 'lucide-react';
 import './AdminDashboard.css';
 
-import { db, auth, storage } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signOut } from 'firebase/auth';
+import { fileToBase64 } from '../utils/fileToBase64';
+import { compressImage } from '../utils/compressImage';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -37,10 +38,21 @@ const AdminDashboard = () => {
         const newErrors = {};
         if (!newProduct.name_en?.trim()) newErrors.name_en = "English name is required";
         if (!newProduct.name_tr?.trim()) newErrors.name_tr = "Turkish name is required";
-        if (!newProduct.price || isNaN(newProduct.price) || Number(newProduct.price) <= 0) newErrors.price = "Valid price is required";
-        if (!newProduct.stock || isNaN(newProduct.stock) || Number(newProduct.stock) < 0) newErrors.stock = "Valid stock is required";
+
+        // Price check
+        if (!newProduct.price || isNaN(newProduct.price) || Number(newProduct.price) <= 0) {
+            newErrors.price = "Valid price is required";
+        }
+
+        // Stock check - allow 0 but not empty/NaN
+        if (newProduct.stock === '' || isNaN(newProduct.stock) || Number(newProduct.stock) < 0) {
+            newErrors.stock = "Valid stock is required";
+        }
+
         if (!newProduct.category) newErrors.category = "Category is required";
-        if (imageFiles.length === 0 && !newProduct.image) newErrors.image = "At least one product image is required";
+        if (imageFiles.length === 0 && !newProduct.image && (!newProduct.images || newProduct.images.length === 0)) {
+            newErrors.image = "At least one product image is required";
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -58,50 +70,91 @@ const AdminDashboard = () => {
 
     const handleAddProduct = async (e) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        console.log("DEBUG: handleAddProduct started");
+        if (!validateForm()) {
+            console.log("DEBUG: Validation failed", errors);
+            return;
+        }
 
         setIsUploading(true);
+
         try {
+            console.log("DEBUG: Starting image conversion to base64. files count:", imageFiles.length);
             let allImages = [...(newProduct.images || [])];
 
             if (imageFiles.length > 0) {
-                const uploadPromises = imageFiles.map(async (file) => {
-                    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    return await getDownloadURL(snapshot.ref);
-                });
-                const newImageUrls = await Promise.all(uploadPromises);
-                allImages = [...allImages, ...newImageUrls];
+                for (let i = 0; i < imageFiles.length; i++) {
+                    const file = imageFiles[i];
+                    console.log(`DEBUG: Compressing image ${i + 1}/${imageFiles.length}:`, file.name);
+                    try {
+                        const compressedBase64 = await compressImage(file);
+                        console.log(`DEBUG: Compression successful for ${file.name}`);
+                        allImages.push(compressedBase64);
+                    } catch (compError) {
+                        console.error(`DEBUG: Compression failed for ${file.name}:`, compError);
+                        // Fallback to base64 if compression fails
+                        const base64String = await fileToBase64(file);
+                        allImages.push(base64String);
+                    }
+                }
             }
+            console.log("DEBUG: Image conversion process finished. All images:", allImages.length);
 
-            const mainImage = allImages.length > 0 ? allImages[0] : '';
+            const mainImage = allImages.length > 0 ? allImages[0] : (newProduct.image || '');
 
+            // Sanitize product data
             const productData = {
-                ...newProduct,
-                name: newProduct.name_en, // Default for backward compatibility
-                description: newProduct.description_en, // Default for backward compatibility
+                name_en: newProduct.name_en || '',
+                name_tr: newProduct.name_tr || '',
+                name: newProduct.name_en || '',
+                description_en: newProduct.description_en || '',
+                description_tr: newProduct.description_tr || '',
+                description: newProduct.description_en || '',
+                price: Number(newProduct.price),
+                category: newProduct.category || 'Living',
+                stock: Number(newProduct.stock),
+                dimensions_en: newProduct.dimensions_en || '',
+                dimensions_tr: newProduct.dimensions_tr || '',
+                finishing_en: newProduct.finishing_en || '',
+                finishing_tr: newProduct.finishing_tr || '',
+                material_en: newProduct.material_en || '',
+                material_tr: newProduct.material_tr || '',
                 image: mainImage,
                 images: allImages,
-                price: Number(newProduct.price),
-                stock: Number(newProduct.stock),
                 status: Number(newProduct.stock) > 0 ? 'Active' : 'Out of Stock',
                 updatedAt: new Date().toISOString()
             };
 
+            // Firestore Size Check (1MB Limit)
+            const dataSize = new Blob([JSON.stringify(productData)]).size;
+            console.log(`DEBUG: Estimated product data size: ${dataSize} bytes`);
+            if (dataSize > 1000000) {
+                alert(`Error: Product data is too large (${(dataSize / 1024 / 1024).toFixed(2)}MB). Firestore limit is 1MB. Please use fewer images or smaller file sizes.`);
+                setIsUploading(false);
+                return;
+            }
+
+            console.log("DEBUG: productData prepared:", productData);
+
             if (editingId) {
+                console.log("DEBUG: Updating existing product in Firestore:", editingId);
                 await updateDoc(doc(db, "products", editingId), productData);
             } else {
+                console.log("DEBUG: Adding new product to Firestore");
                 productData.createdAt = new Date().toISOString();
                 await addDoc(collection(db, "products"), productData);
             }
 
+            console.log("DEBUG: Operation successful. Resetting UI.");
             setShowAddModal(false);
-            setActiveTab('products'); // Switch back to list view
+            setActiveTab('products');
             resetForm();
+            alert(editingId ? "Product updated successfully!" : "Product added successfully!");
         } catch (error) {
-            console.error("Error saving product: ", error);
-            alert("Failed to save product");
+            console.error("DEBUG: CRITICAL ERROR in handleAddProduct:", error);
+            alert(`Error: ${error.message || 'Operation failed. Please check your server and try again.'}`);
         } finally {
+            console.log("DEBUG: handleAddProduct finished");
             setIsUploading(false);
         }
     };
@@ -133,6 +186,18 @@ const AdminDashboard = () => {
     const handleImageChange = (e) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
+            const totalImages = (newProduct.images?.length || 0) + imageFiles.length + files.length;
+
+            if (totalImages > 5) {
+                alert("Only 5 images allowed per product.");
+                // Still add images up to the limit of 5
+                const allowedCount = 5 - ((newProduct.images?.length || 0) + imageFiles.length);
+                if (allowedCount > 0) {
+                    setImageFiles(prev => [...prev, ...files.slice(0, allowedCount)]);
+                }
+                return;
+            }
+
             setImageFiles(prev => [...prev, ...files]);
         }
     };
@@ -191,6 +256,64 @@ const AdminDashboard = () => {
         return () => unsubscribe();
     }, []);
 
+    const [stats, setStats] = useState({
+        totalRevenue: 0,
+        totalOrders: 0,
+        pendingRequests: 0,
+        chartData: []
+    });
+
+    useEffect(() => {
+        if (requests.length === 0) return;
+
+        // 1. Calculate General Stats
+        const totalOrders = requests.length;
+        const pendingRequests = requests.filter(r => r.status === 'pending').length;
+
+        // 2. Calculate Revenue
+        const totalRevenue = requests.reduce((acc, r) => {
+            if (r.productDetails?.price) return acc + Number(r.productDetails.price);
+            if (r.productDetails?.id) {
+                const p = products.find(prod => prod.id === r.productDetails.id);
+                return acc + (p ? Number(p.price) : 0);
+            }
+            return acc;
+        }, 0);
+
+        // 3. Generate Chart Data (Last 7 Days)
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return {
+                date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                fullDate: d.toDateString(),
+                count: 0
+            };
+        }).reverse();
+
+        requests.forEach(r => {
+            if (!r.createdAt) return;
+            const dStr = new Date(r.createdAt).toDateString();
+            const dayIndex = last7Days.findIndex(d => d.fullDate === dStr);
+            if (dayIndex !== -1) {
+                last7Days[dayIndex].count += 1;
+            }
+        });
+
+        const maxCount = Math.max(...last7Days.map(d => d.count), 1);
+        const chartData = last7Days.map(d => ({
+            ...d,
+            percent: (d.count / maxCount) * 100
+        }));
+
+        setStats({
+            totalRevenue,
+            totalOrders,
+            pendingRequests,
+            chartData
+        });
+    }, [requests, products]);
+
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -233,17 +356,17 @@ const AdminDashboard = () => {
                             <div className="stat-icon-bg purple"><ShoppingBag size={24} /></div>
                             <div className="stat-info">
                                 <h3>Total Orders</h3>
-                                <p className="stat-value">124</p>
-                                <span className="stat-trend positive"><TrendingUp size={14} /> +12% this month</span>
+                                <p className="stat-value">{stats.totalOrders}</p>
+                                <span className="stat-trend positive"><TrendingUp size={14} /> Total Requests</span>
                             </div>
                         </motion.div>
 
                         <motion.div variants={itemVariants} className="stat-card glass-card">
                             <div className="stat-icon-bg green"><DollarSign size={24} /></div>
                             <div className="stat-info">
-                                <h3>Revenue</h3>
-                                <p className="stat-value">$45,200</p>
-                                <span className="stat-trend positive"><TrendingUp size={14} /> +8% this month</span>
+                                <h3>Estimated Revenue</h3>
+                                <p className="stat-value">${stats.totalRevenue.toLocaleString()}</p>
+                                <span className="stat-trend positive"><TrendingUp size={14} /> From Quotes</span>
                             </div>
                         </motion.div>
 
@@ -251,24 +374,31 @@ const AdminDashboard = () => {
                             <div className="stat-icon-bg orange"><Users size={24} /></div>
                             <div className="stat-info">
                                 <h3>Pending Requests</h3>
-                                <p className="stat-value">{requests.length || 18}</p>
+                                <p className="stat-value">{stats.pendingRequests}</p>
                                 <span className="stat-trend warning">Action Required</span>
                             </div>
                         </motion.div>
 
                         <motion.div variants={itemVariants} className="dashboard-chart glass-card full-width">
-                            <h3>Revenue Overview</h3>
+                            <h3>Request Activity (Last 7 Days)</h3>
                             <div className="fake-chart">
-                                <div className="bar" style={{ height: '40%' }}></div>
-                                <div className="bar" style={{ height: '60%' }}></div>
-                                <div className="bar" style={{ height: '45%' }}></div>
-                                <div className="bar" style={{ height: '80%' }}></div>
-                                <div className="bar" style={{ height: '55%' }}></div>
-                                <div className="bar" style={{ height: '90%' }}></div>
-                                <div className="bar" style={{ height: '70%' }}></div>
+                                {stats.chartData.length > 0 ? stats.chartData.map((d, i) => (
+                                    <div
+                                        key={i}
+                                        className="bar"
+                                        style={{ height: `${Math.max(d.percent, 5)}%` }}
+                                        title={`${d.count} requests on ${d.date}`}
+                                    ></div>
+                                )) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
+                                        Loading activity data...
+                                    </div>
+                                )}
                             </div>
                             <div className="chart-labels">
-                                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                                {stats.chartData.map((d, i) => (
+                                    <span key={i}>{d.date}</span>
+                                ))}
                             </div>
                         </motion.div>
                     </motion.div>
@@ -774,7 +904,7 @@ const AdminDashboard = () => {
                                         <h4>Default Language</h4>
                                         <p>Select the main language for admin</p>
                                     </div>
-                                    <select defaultValue="en">
+                                    <select defaultValue="tr">
                                         <option value="en">English</option>
                                         <option value="tr">Turkish</option>
                                         <option value="it">Italian</option>

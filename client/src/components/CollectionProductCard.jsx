@@ -6,20 +6,27 @@ import './CollectionProductCard.css';
 const CollectionProductCard = ({ product }) => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const displayName = product[`name_${i18n.language}`] || product.name;
+    const displayDesc = product[`description_${i18n.language}`] || product.shortDesc || product.description;
 
     return (
         <div className="collection-card">
-            <div className="collection-card-image">
-                <img src={product.image} alt={product.name} onClick={() => navigate(`/product/${product.id}`)} />
+            <div className="collection-card-image" onClick={() => navigate(`/product/${product.id}`)}>
+                <img src={product.image || null} alt={displayName} loading="lazy" />
+                <div className="collection-badge">{product.category}</div>
             </div>
 
             <div className="collection-card-content">
-                <span className="collection-card-category">{product.category}</span>
-                <h3 className="collection-card-title">{product[`name_${i18n.language}`] || product.name}</h3>
-                <p className="collection-card-desc">{product[`description_${i18n.language}`] || product.description}</p>
+                <div className="collection-card-main">
+                    <h3 className="collection-card-title">{displayName}</h3>
+                    <p className="collection-card-desc">{displayDesc}</p>
+                </div>
 
                 <div className="collection-card-footer">
-                    <span className="collection-card-price">{product.price}</span>
+                    <div className="collection-price-wrapper">
+                        <span className="collection-currency">$</span>
+                        <span className="collection-price-value">{product.price}</span>
+                    </div>
                     <button
                         className="collection-explore-btn"
                         onClick={() => navigate(`/product/${product.id}`)}

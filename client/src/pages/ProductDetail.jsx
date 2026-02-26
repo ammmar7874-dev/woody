@@ -61,7 +61,7 @@ const ProductDetail = () => {
                             transition={{ duration: 0.5 }}
                             className="main-image"
                         >
-                            <img src={images[selectedImage]} alt={product.name} />
+                            <img src={images[selectedImage] || null} alt={product.name} />
                         </motion.div>
                         {images.length > 1 && (
                             <div className="thumbnail-list">
@@ -79,49 +79,67 @@ const ProductDetail = () => {
                     </div>
 
                     <div className="product-info-panel">
-                        <span className="product-category-badge">{product.category}</span>
-                        <h1>{product[`name_${i18n.language}`] || product.name}</h1>
-                        <div className="rating">
-                            <Star size={18} fill="#c5a059" color="#c5a059" />
-                            <Star size={18} fill="#c5a059" color="#c5a059" />
-                            <Star size={18} fill="#c5a059" color="#c5a059" />
-                            <Star size={18} fill="#c5a059" color="#c5a059" />
-                            <Star size={18} fill="#c5a059" color="#c5a059" />
-                            <span>(12 Reviews)</span>
+                        <div className="product-meta">
+                            <span className="product-category-badge">{product.category}</span>
+                            <span className={`status-badge-detail ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                                {product.stock > 0 ? (i18n.language === 'tr' ? 'Stokta' : 'In Stock') : (i18n.language === 'tr' ? 'Tükendi' : 'Out of Stock')}
+                            </span>
                         </div>
 
-                        <p className="price">{product.price}</p>
-                        <p className="description">
+                        <h1>{product[`name_${i18n.language}`] || product.name}</h1>
+
+                        <div className="rating">
+                            <div className="stars">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star key={i} size={16} fill="#c5a059" color="#c5a059" />
+                                ))}
+                            </div>
+                            <span className="review-count">(12 {t('reviews') || 'Reviews'})</span>
+                        </div>
+
+                        <div className="price-tag">
+                            <span className="currency">$</span>
+                            <span className="amount">{Number(product.price).toLocaleString()}</span>
+                        </div>
+
+                        <p className="product-description">
                             {product[`description_${i18n.language}`] || product.description}
                         </p>
 
-                        <div className="specs-box">
-                            <h3>{t('pd_desc')}</h3>
-                            <ul>
-                                <li><strong>{t('pd_material')}:</strong> {product[`material_${i18n.language}`] || product.material_en || (product.name.includes('Walnut') || product.name.includes('Ceviz') ? (i18n.language === 'tr' ? 'Ceviz' : 'Walnut') : (i18n.language === 'tr' ? 'Meşe' : 'Oak'))}</li>
-                                <li><strong>{t('pd_finish')}:</strong> {product[`finishing_${i18n.language}`] || product.finishing_en || (i18n.language === 'tr' ? 'Mat Yağ Vakslı' : 'Matte Oil Wax')}</li>
-                                <li><strong>{t('pd_dimensions')}:</strong> {product[`dimensions_${i18n.language}`] || (i18n.language === 'tr' ? 'Alanınıza göre özel ölçü' : 'Custom to fit your space')}</li>
-                                <li><strong>{t('pd_production_time')}:</strong> 4-6 {t('pd_weeks')}</li>
-                            </ul>
+                        <div className="specs-grid">
+                            <div className="spec-item">
+                                <span className="spec-label">{t('pd_material')}</span>
+                                <span className="spec-value">{product[`material_${i18n.language}`] || product.material_en || (i18n.language === 'tr' ? 'Masif Masif' : 'Solid Wood')}</span>
+                            </div>
+                            <div className="spec-item">
+                                <span className="spec-label">{t('pd_finish')}</span>
+                                <span className="spec-value">{product[`finishing_${i18n.language}`] || product.finishing_en || (i18n.language === 'tr' ? 'Doğal Yağ' : 'Natural Oil')}</span>
+                            </div>
+                            <div className="spec-item">
+                                <span className="spec-label">{t('pd_dimensions')}</span>
+                                <span className="spec-value">{product[`dimensions_${i18n.language}`] || (i18n.language === 'tr' ? 'Özel Ölçü' : 'Custom Size')}</span>
+                            </div>
+                            <div className="spec-item">
+                                <span className="spec-label">{t('pd_production_time')}</span>
+                                <span className="spec-value">4-6 {t('pd_weeks')}</span>
+                            </div>
                         </div>
 
                         <div className="action-area">
                             <button
                                 className="primary-btn request-offer-btn"
                                 onClick={() => openQuoteModal('product', product)}
+                                disabled={product.stock <= 0 && !product.isCustomOrder}
                             >
                                 {t('cta_quote')}
                             </button>
-                            <p className="secure-note">
-                                <Shield size={16} /> {t('pd_guarantee')}
-                            </p>
-                        </div>
-
-                        <div className="delivery-info">
-                            <Truck size={24} />
-                            <div>
-                                <h4>{t('pd_white_glove')}</h4>
-                                <p>{t('pd_delivery_desc')}</p>
+                            <div className="trust-badges">
+                                <div className="trust-item">
+                                    <Shield size={16} /> <span>{t('pd_guarantee') || 'Secure Guarantee'}</span>
+                                </div>
+                                <div className="trust-item">
+                                    <Truck size={16} /> <span>{t('pd_white_glove') || 'White Glove Delivery'}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
