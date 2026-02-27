@@ -13,7 +13,7 @@ const CollectionProductCard = ({ product }) => {
         <div className="collection-card">
             <div className="collection-card-image" onClick={() => navigate(`/product/${product.id}`)}>
                 <img src={product.image || null} alt={displayName} loading="lazy" />
-                <div className="collection-badge">{product.category}</div>
+                <div className="collection-badge">{t(product.category) || product.category}</div>
             </div>
 
             <div className="collection-card-content">
@@ -24,8 +24,12 @@ const CollectionProductCard = ({ product }) => {
 
                 <div className="collection-card-footer">
                     <div className="collection-price-wrapper">
-                        <span className="collection-currency">$</span>
-                        <span className="collection-price-value">{product.price}</span>
+                        <span className="collection-currency">{t('currency')}</span>
+                        <span className="collection-price-value">
+                            {i18n.language === 'tr' && product.price_tr
+                                ? Number(product.price_tr).toLocaleString()
+                                : Number(product.price).toLocaleString()}
+                        </span>
                     </div>
                     <button
                         className="collection-explore-btn"

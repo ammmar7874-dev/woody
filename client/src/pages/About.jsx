@@ -16,7 +16,7 @@ const About = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="hero-title white"
+                        className="hero-title"
                     >
                         {t('about_title')}
                     </motion.h1>

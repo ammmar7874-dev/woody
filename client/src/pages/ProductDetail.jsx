@@ -79,27 +79,33 @@ const ProductDetail = () => {
                     </div>
 
                     <div className="product-info-panel">
-                        <div className="product-meta">
-                            <span className="product-category-badge">{product.category}</span>
-                            <span className={`status-badge-detail ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                                {product.stock > 0 ? (i18n.language === 'tr' ? 'Stokta' : 'In Stock') : (i18n.language === 'tr' ? 'Tükendi' : 'Out of Stock')}
-                            </span>
-                        </div>
-
-                        <h1>{product[`name_${i18n.language}`] || product.name}</h1>
-
-                        <div className="rating">
-                            <div className="stars">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={16} fill="#c5a059" color="#c5a059" />
-                                ))}
+                        <div className="product-header-section">
+                            <div className="product-meta">
+                                <span className="product-category-badge">{t(product.category) || product.category}</span>
+                                <span className={`status-badge-detail ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                                    {product.stock > 0 ? (i18n.language === 'tr' ? 'Stokta' : 'In Stock') : (i18n.language === 'tr' ? 'Tükendi' : 'Out of Stock')}
+                                </span>
                             </div>
-                            <span className="review-count">(12 {t('reviews') || 'Reviews'})</span>
+
+                            <h1>{product[`name_${i18n.language}`] || product.name}</h1>
+
+                            <div className="rating">
+                                <div className="stars">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} size={16} fill="#c5a059" color="#c5a059" />
+                                    ))}
+                                </div>
+                                <span className="review-count">(12 {t('reviews')})</span>
+                            </div>
                         </div>
 
                         <div className="price-tag">
-                            <span className="currency">$</span>
-                            <span className="amount">{Number(product.price).toLocaleString()}</span>
+                            <span className="currency">{t('currency')}</span>
+                            <span className="amount">
+                                {i18n.language === 'tr' && product.price_tr
+                                    ? Number(product.price_tr).toLocaleString()
+                                    : Number(product.price).toLocaleString()}
+                            </span>
                         </div>
 
                         <p className="product-description">

@@ -6,7 +6,7 @@
 }
 
 .collection-hero {
-    background: #fdfdfd;
+    background: var(--bg-cream);
     padding: 6rem 0 4rem;
     border-bottom: 1px solid #f0f0f0;
     text-align: center;
@@ -29,6 +29,51 @@
     font-size: 1.1rem;
     color: #666;
     line-height: 1.6;
+}
+
+.filter-section {
+    padding: 2rem 0;
+    background: #fdfdfd;
+    border-bottom: 1px solid #f0f0f0;
+    position: sticky;
+    top: 80px;
+    z-index: 100;
+}
+
+.filter-bar {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.filter-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    color: #2d241e;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    border-color: #c5a059;
+    color: #c5a059;
+}
+
+.filter-btn.active {
+    background: #2d241e;
+    border-color: #2d241e;
+    color: white;
 }
 
 .collection-grid-section {

@@ -21,7 +21,7 @@ const ProductCard = ({ product }) => {
             <Link to={`/product/${product.id}`} className="product-image-link">
                 <div className="product-image-box">
                     <img src={product.image || null} alt={displayName} loading="lazy" />
-                    <div className="product-badge">{product.category}</div>
+                    <div className="product-badge">{t(product.category) || product.category}</div>
                     <div className="product-hover-overlay">
                         <span className="view-details-txt">{t('btn_details')}</span>
                     </div>
@@ -36,8 +36,12 @@ const ProductCard = ({ product }) => {
 
                 <div className="product-footer">
                     <div className="price-wrapper">
-                        <span className="currency">$</span>
-                        <span className="price-value">{product.price}</span>
+                        <span className="currency">{t('currency')}</span>
+                        <span className="price-value">
+                            {i18n.language === 'tr' && product.price_tr
+                                ? Number(product.price_tr).toLocaleString()
+                                : Number(product.price).toLocaleString()}
+                        </span>
                     </div>
                     <Link to={`/product/${product.id}`} className="explore-link">
                         <ArrowRight size={18} />

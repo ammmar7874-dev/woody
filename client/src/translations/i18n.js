@@ -110,7 +110,22 @@ const resources = {
       "gallery_proj_3": "Executive Desk Suite",
       "gallery_proj_4": "Bespoke Media Unit",
       "gallery_proj_5": "Scandinavian Dining Set",
-      "gallery_proj_6": "Hand-Carved Headboard"
+      "gallery_proj_6": "Hand-Carved Headboard",
+      "reviews": "Reviews",
+      "currency": "$",
+      "cat_all": "All",
+      "cat_living": "Living",
+      "cat_dining": "Dining",
+      "cat_kitchen": "Kitchen",
+      "cat_bedroom": "Bedroom",
+      "cat_office": "Office",
+      "cat_kids_teen": "Kids & Teen",
+      "cat_hallway": "Hallway",
+      "cat_outdoor": "Outdoor / Garden",
+      "cat_storage": "Storage",
+      "cat_decoration": "Decoration",
+      "cat_new_arrivals": "New Arrivals",
+      "cat_sale": "Sale"
     }
   },
   tr: {
@@ -218,8 +233,22 @@ const resources = {
       "gallery_proj_3": "Yönetici Masa Takımı",
       "gallery_proj_4": "Özel Yapım Medya Ünitesi",
       "gallery_proj_5": "İskandinav Yemek Takımı",
-      "gallery_proj_6": "El Oyması Yatak Başlığı"
-
+      "gallery_proj_6": "El Oyması Yatak Başlığı",
+      "reviews": "Değerlendirme",
+      "currency": "₺",
+      "cat_all": "Hepsi",
+      "cat_living": "Salon",
+      "cat_dining": "Yemek",
+      "cat_kitchen": "Mutfak",
+      "cat_bedroom": "Yatak Odası",
+      "cat_office": "Ofis",
+      "cat_kids_teen": "Genç & Çocuk",
+      "cat_hallway": "Antre & Hol",
+      "cat_outdoor": "Bahçe & Balkon",
+      "cat_storage": "Depolama",
+      "cat_decoration": "Dekorasyon",
+      "cat_new_arrivals": "Yeni Gelenler",
+      "cat_sale": "İndirimdekiler"
     }
   }
 };

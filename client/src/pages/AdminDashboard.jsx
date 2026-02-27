@@ -14,6 +14,7 @@ import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, updateDoc, d
 import { signOut } from 'firebase/auth';
 import { fileToBase64 } from '../utils/fileToBase64';
 import { compressImage } from '../utils/compressImage';
+import ImageAdjuster from '../components/ImageAdjuster';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -24,7 +25,7 @@ const AdminDashboard = () => {
     const [imageFiles, setImageFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [newProduct, setNewProduct] = useState({
-        name_en: '', name_tr: '', price: '', category: 'Living', stock: '',
+        name_en: '', name_tr: '', price: '', price_tr: '', category: 'Living', stock: '',
         description_en: '', description_tr: '',
         dimensions_en: '', dimensions_tr: '',
         finishing_en: '', finishing_tr: '',
@@ -33,6 +34,8 @@ const AdminDashboard = () => {
     });
     const [editingId, setEditingId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [adjustmentQueue, setAdjustmentQueue] = useState([]);
+    const [currentAdjusting, setCurrentAdjusting] = useState(null);
 
     const validateForm = () => {
         const newErrors = {};
@@ -111,6 +114,7 @@ const AdminDashboard = () => {
                 description_tr: newProduct.description_tr || '',
                 description: newProduct.description_en || '',
                 price: Number(newProduct.price),
+                price_tr: Number(newProduct.price_tr) || 0,
                 category: newProduct.category || 'Living',
                 stock: Number(newProduct.stock),
                 dimensions_en: newProduct.dimensions_en || '',
@@ -161,7 +165,7 @@ const AdminDashboard = () => {
 
     const resetForm = () => {
         setNewProduct({
-            name_en: '', name_tr: '', price: '', category: 'Living', stock: '',
+            name_en: '', name_tr: '', price: '', price_tr: '', category: 'Living', stock: '',
             description_en: '', description_tr: '',
             dimensions_en: '', dimensions_tr: '',
             finishing_en: '', finishing_tr: '',
@@ -190,16 +194,45 @@ const AdminDashboard = () => {
 
             if (totalImages > 5) {
                 alert("Only 5 images allowed per product.");
-                // Still add images up to the limit of 5
-                const allowedCount = 5 - ((newProduct.images?.length || 0) + imageFiles.length);
-                if (allowedCount > 0) {
-                    setImageFiles(prev => [...prev, ...files.slice(0, allowedCount)]);
-                }
                 return;
             }
 
-            setImageFiles(prev => [...prev, ...files]);
+            setAdjustmentQueue(files);
+            processNextInQueue(files[0], files.slice(1));
         }
+    };
+
+    const processNextInQueue = (file, remaining) => {
+        if (!file) {
+            setAdjustmentQueue([]);
+            setCurrentAdjusting(null);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setCurrentAdjusting({
+                src: e.target.result,
+                file: file,
+                remaining: remaining
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleAdjustmentConfirm = (adjustedDataUrl) => {
+        fetch(adjustedDataUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                const newFile = new File([blob], currentAdjusting.file.name, { type: 'image/jpeg' });
+                setImageFiles(prev => [...prev, newFile]);
+
+                if (currentAdjusting.remaining.length > 0) {
+                    processNextInQueue(currentAdjusting.remaining[0], currentAdjusting.remaining.slice(1));
+                } else {
+                    setCurrentAdjusting(null);
+                }
+            });
     };
 
 
@@ -427,7 +460,8 @@ const AdminDashboard = () => {
                                     <tr>
                                         <th>Product Name</th>
                                         <th>Category</th>
-                                        <th>Price</th>
+                                        <th>Price ($)</th>
+                                        <th>Price (₺)</th>
                                         <th>Stock</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -437,8 +471,9 @@ const AdminDashboard = () => {
                                     {products.map((p, i) => (
                                         <motion.tr key={p.id} variants={itemVariants} custom={i}>
                                             <td className="fw-600">{p.name}</td>
-                                            <td>{p.category}</td>
+                                            <td>{t(p.category) || p.category}</td>
                                             <td>${p.price}</td>
+                                            <td>₺{p.price_tr || 0}</td>
                                             <td>{p.stock} units</td>
                                             <td><span className="status-badge active">{p.status}</span></td>
                                             <td>
@@ -517,6 +552,21 @@ const AdminDashboard = () => {
                                             />
                                             {errors.price && <span className="error-message"><AlertCircle size={14} /> {errors.price}</span>}
                                         </div>
+                                        <div className="input-field">
+                                            <label>Fiyat (₺)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                value={newProduct.price_tr}
+                                                onChange={(e) => {
+                                                    setNewProduct({ ...newProduct, price_tr: e.target.value });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                         <div className={`input-field ${errors.stock ? 'error' : ''}`}>
                                             <label>Stock</label>
                                             <input
@@ -538,10 +588,18 @@ const AdminDashboard = () => {
                                             value={newProduct.category}
                                             onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                                         >
-                                            <option value="Living">Living Room</option>
-                                            <option value="Office">Office</option>
-                                            <option value="Dining">Dining</option>
-                                            <option value="Bedroom">Bedroom</option>
+                                            <option value="cat_living">{t('cat_living')}</option>
+                                            <option value="cat_dining">{t('cat_dining')}</option>
+                                            <option value="cat_kitchen">{t('cat_kitchen')}</option>
+                                            <option value="cat_bedroom">{t('cat_bedroom')}</option>
+                                            <option value="cat_office">{t('cat_office')}</option>
+                                            <option value="cat_kids_teen">{t('cat_kids_teen')}</option>
+                                            <option value="cat_hallway">{t('cat_hallway')}</option>
+                                            <option value="cat_outdoor">{t('cat_outdoor')}</option>
+                                            <option value="cat_storage">{t('cat_storage')}</option>
+                                            <option value="cat_decoration">{t('cat_decoration')}</option>
+                                            <option value="cat_new_arrivals">{t('cat_new_arrivals')}</option>
+                                            <option value="cat_sale">{t('cat_sale')}</option>
                                         </select>
                                     </div>
 
@@ -678,6 +736,22 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         </form>
+
+                        {currentAdjusting && (
+                            <ImageAdjuster
+                                isOpen={!!currentAdjusting}
+                                imageSrc={currentAdjusting.src}
+                                aspect={1} // Square aspect ratio for product images
+                                onCancel={() => {
+                                    if (currentAdjusting.remaining.length > 0) {
+                                        processNextInQueue(currentAdjusting.remaining[0], currentAdjusting.remaining.slice(1));
+                                    } else {
+                                        setCurrentAdjusting(null);
+                                    }
+                                }}
+                                onConfirm={handleAdjustmentConfirm}
+                            />
+                        )}
                     </motion.div>
                 );
             case 'requests':

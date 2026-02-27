@@ -8,6 +8,7 @@ import { db } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 import { fileToBase64 } from '../utils/fileToBase64';
 import { compressImage } from '../utils/compressImage';
+import ImageAdjuster from './ImageAdjuster';
 
 import { useQuote } from '../context/QuoteContext.jsx';
 
@@ -29,6 +30,7 @@ const QuoteForm = ({ onClose, isModal }) => {
     });
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [adjusterInfo, setAdjusterInfo] = useState({ isOpen: false, src: null });
 
     const handleNext = () => setStep(prev => prev + 1);
     const handleBack = () => setStep(prev => prev - 1);
@@ -248,7 +250,17 @@ const QuoteForm = ({ onClose, isModal }) => {
                                         accept=".pdf,.jpg,.jpeg,.png"
                                         onChange={(e) => {
                                             const file = e.target.files[0];
-                                            if (file) {
+                                            if (file && file.type.startsWith('image/')) {
+                                                const reader = new FileReader();
+                                                reader.onload = (event) => {
+                                                    setAdjusterInfo({
+                                                        isOpen: true,
+                                                        src: event.target.result,
+                                                        originalFile: file
+                                                    });
+                                                };
+                                                reader.readAsDataURL(file);
+                                            } else if (file) {
                                                 setFormData({
                                                     ...formData,
                                                     fileBlob: file,
@@ -260,6 +272,26 @@ const QuoteForm = ({ onClose, isModal }) => {
                                     {formData.fileName && <p className="file-name" style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#4a5568' }}>{formData.fileName}</p>}
                                 </div>
                             </div>
+
+                            <ImageAdjuster
+                                isOpen={adjusterInfo.isOpen}
+                                imageSrc={adjusterInfo.src}
+                                aspect={1.5} // Example: 3:2 aspect ratio for project photos
+                                onCancel={() => setAdjusterInfo({ isOpen: false, src: null })}
+                                onConfirm={(adjustedDataUrl) => {
+                                    // Convert dataURL back to a blob for consistency
+                                    fetch(adjustedDataUrl)
+                                        .then(res => res.blob())
+                                        .then(blob => {
+                                            setFormData({
+                                                ...formData,
+                                                fileBlob: blob,
+                                                fileName: adjusterInfo.originalFile.name
+                                            });
+                                            setAdjusterInfo({ isOpen: false, src: null });
+                                        });
+                                }}
+                            />
                             <div className="form-nav">
                                 <button type="button" className="secondary-btn" onClick={handleBack}>{t('q_back')}</button>
                                 <button type="button" className="primary-btn" onClick={handleNext}>{t('q_next')}</button>
