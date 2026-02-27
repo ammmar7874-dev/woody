@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+
 import {
     LayoutDashboard, Package, Users, Settings, LogOut,
     TrendingUp, DollarSign, ShoppingBag, Plus, Bell,
@@ -17,7 +19,10 @@ import { compressImage } from '../utils/compressImage';
 import ImageAdjuster from '../components/ImageAdjuster';
 
 const AdminDashboard = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
+    const EXCHANGE_RATE = 34.00; // Hardcoded exchange rate for now
+
     const [activeTab, setActiveTab] = useState('overview');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [products, setProducts] = useState([]);
@@ -546,10 +551,17 @@ const AdminDashboard = () => {
                                                 placeholder="0.00"
                                                 value={newProduct.price}
                                                 onChange={(e) => {
-                                                    setNewProduct({ ...newProduct, price: e.target.value });
+                                                    const usdValue = e.target.value;
+                                                    const tryValue = usdValue ? (Number(usdValue) * EXCHANGE_RATE).toFixed(2) : '';
+                                                    setNewProduct({
+                                                        ...newProduct,
+                                                        price: usdValue,
+                                                        price_tr: tryValue
+                                                    });
                                                     if (errors.price) setErrors({ ...errors, price: null });
                                                 }}
                                             />
+
                                             {errors.price && <span className="error-message"><AlertCircle size={14} /> {errors.price}</span>}
                                         </div>
                                         <div className="input-field">
