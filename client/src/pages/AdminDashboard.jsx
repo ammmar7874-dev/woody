@@ -7,7 +7,8 @@ import {
     LayoutDashboard, Package, Users, Settings, LogOut,
     TrendingUp, DollarSign, ShoppingBag, Plus, Bell,
     Search, User, Image, ArrowLeft, Mail, Phone,
-    Shield, MapPin, Save, Menu, X, Upload, AlertCircle, Check
+    Shield, MapPin, Save, Menu, X, Upload, AlertCircle, Check,
+    Eye, Calendar, MessageSquare, ExternalLink
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -41,6 +42,9 @@ const AdminDashboard = () => {
     const [errors, setErrors] = useState({});
     const [adjustmentQueue, setAdjustmentQueue] = useState([]);
     const [currentAdjusting, setCurrentAdjusting] = useState(null);
+    const [formTab, setFormTab] = useState('en'); // 'en' or 'tr'
+    const [selectedQuote, setSelectedQuote] = useState(null);
+    const [showQuoteModal, setShowQuoteModal] = useState(false);
 
     const validateForm = () => {
         const newErrors = {};
@@ -258,6 +262,9 @@ const AdminDashboard = () => {
                 status: newStatus,
                 updatedAt: new Date().toISOString()
             });
+            if (selectedQuote && selectedQuote._id === id) {
+                setSelectedQuote({ ...selectedQuote, status: newStatus });
+            }
         } catch (error) {
             console.error("Error updating status:", error);
             alert("Failed to update status");
@@ -378,6 +385,187 @@ const AdminDashboard = () => {
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
+    const renderQuoteDetailModal = () => (
+        <AnimatePresence>
+            {showQuoteModal && selectedQuote && (
+                <>
+                    <motion.div
+                        className="modal-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowQuoteModal(false)}
+                    />
+                    <motion.div
+                        className="modal-container admin-modal quote-detail-modal"
+                        initial={{ opacity: 0, scale: 0.95, x: "-50%", y: "-45%" }}
+                        animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+                        exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-45%" }}
+                        style={{ maxWidth: '800px' }}
+                    >
+                        <div className="modal-header">
+                            <div>
+                                <h3>Quote Request Details</h3>
+                                <p className="text-sm color-muted">ID: {selectedQuote._id || selectedQuote.id}</p>
+                            </div>
+                            <button onClick={() => setShowQuoteModal(false)}><X size={24} /></button>
+                        </div>
+
+                        <div className="modal-body quote-modal-content">
+                            <div className="quote-detail-grid">
+                                <div className="detail-section">
+                                    <h4>Customer Information</h4>
+                                    <div className="detail-card">
+                                        <div className="detail-item">
+                                            <User size={16} className="mt-1" />
+                                            <div>
+                                                <label>Full Name</label>
+                                                <p>{selectedQuote.name}</p>
+                                            </div>
+                                        </div>
+                                        <div className="detail-item">
+                                            <Mail size={16} className="mt-1" />
+                                            <div>
+                                                <label>Email Address</label>
+                                                <p>{selectedQuote.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="detail-item">
+                                            <Phone size={16} className="mt-1" />
+                                            <div>
+                                                <label>Phone Number</label>
+                                                <p>{selectedQuote.phone || 'Not provided'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="detail-section">
+                                    <h4>Request Summary</h4>
+                                    <div className="detail-card">
+                                        <div className="detail-item">
+                                            <Calendar size={16} className="mt-1" />
+                                            <div>
+                                                <label>Date Received</label>
+                                                <p>{selectedQuote.createdAt ? new Date(selectedQuote.createdAt).toLocaleString() : 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="detail-item">
+                                            <TrendingUp size={16} className="mt-1" />
+                                            <div>
+                                                <label>Status</label>
+                                                <select
+                                                    className={`status-select ${selectedQuote.status || 'pending'}`}
+                                                    value={selectedQuote.status || 'pending'}
+                                                    onChange={(e) => handleStatusUpdate(selectedQuote._id, e.target.value)}
+                                                >
+                                                    <option value="pending">Pending</option>
+                                                    <option value="replied">Replied</option>
+                                                    <option value="closed">Closed</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="detail-item">
+                                            <MapPin size={16} className="mt-1" />
+                                            <div>
+                                                <label>Shipping / Location</label>
+                                                <p>{selectedQuote.whereToOrder || 'Not specified'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="detail-section quote-description-box">
+                                    <h4>Message & Requirements</h4>
+                                    <div className="detail-card">
+                                        <div className="detail-item">
+                                            <MessageSquare size={16} className="mt-1" />
+                                            <div className="description-text">
+                                                {selectedQuote.description}
+                                            </div>
+                                        </div>
+                                        {selectedQuote.extraComments && (
+                                            <div className="detail-item" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                                                <Plus size={16} className="mt-1" />
+                                                <div>
+                                                    <label>Extra Comments</label>
+                                                    <p className="description-text">{selectedQuote.extraComments}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Attachments Section */}
+                                {(selectedQuote.files || selectedQuote.file) && (
+                                    <div className="detail-section quote-description-box">
+                                        <h4>Attachments ({selectedQuote.files?.length || 1})</h4>
+                                        <div className="attachments-list">
+                                            {/* Legacy single file support */}
+                                            {selectedQuote.file && !selectedQuote.files && (
+                                                <div className="attachment-preview-large">
+                                                    {selectedQuote.file.startsWith('data:image/') || selectedQuote.file.startsWith('http') ? (
+                                                        <img src={selectedQuote.file} alt="Attachment" />
+                                                    ) : (
+                                                        <div className="pdf-preview">
+                                                            <Upload size={48} style={{ color: 'var(--gold)', marginBottom: '1rem' }} />
+                                                            <p>Document: {selectedQuote.fileName || 'document.pdf'}</p>
+                                                            <a href={selectedQuote.file} target="_blank" rel="noopener noreferrer" className="gold-btn" style={{ display: 'inline-flex', marginTop: '1rem' }}>
+                                                                <ExternalLink size={16} /> Open Document
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Multi-file support */}
+                                            {selectedQuote.files?.map((file, idx) => (
+                                                <div key={idx} className="attachment-item">
+                                                    {file.type?.startsWith('image/') || (file.url && (file.url.startsWith('data:image/') || file.url.match(/\.(jpg|jpeg|png|webp)$/i))) ? (
+                                                        <div className="attachment-preview-large">
+                                                            <img src={file.url} alt={file.name || `Attachment ${idx + 1}`} />
+                                                            <div className="file-info-overlay">
+                                                                <span>{file.name || `Image ${idx + 1}`}</span>
+                                                                <a href={file.url} target="_blank" rel="noopener noreferrer">
+                                                                    <ExternalLink size={14} />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="attachment-preview-large">
+                                                            <div className="pdf-preview">
+                                                                <Upload size={40} style={{ color: 'var(--gold)', marginBottom: '0.5rem' }} />
+                                                                <p className="text-sm">{file.name || 'Document'}</p>
+                                                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="gold-btn" style={{ display: 'inline-flex', marginTop: '0.5rem', padding: '6px 12px', fontSize: '0.8rem' }}>
+                                                                    <ExternalLink size={14} /> View PDF
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="modal-footer-actions">
+                            <button className="secondary-btn" onClick={() => setShowQuoteModal(false)}>Close</button>
+                            <a
+                                href={`mailto:${selectedQuote.email}?subject=Re: Your Quote Request - Woodify`}
+                                className="primary-btn"
+                                onClick={() => handleStatusUpdate(selectedQuote._id, 'replied')}
+                            >
+                                <Mail size={18} /> Send Email Reply
+                            </a>
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    );
+
     const renderContent = () => {
         switch (activeTab) {
             case 'overview':
@@ -475,12 +663,12 @@ const AdminDashboard = () => {
                                 <tbody>
                                     {products.map((p, i) => (
                                         <motion.tr key={p.id} variants={itemVariants} custom={i}>
-                                            <td className="fw-600">{p.name}</td>
-                                            <td>{t(p.category) || p.category}</td>
-                                            <td>${p.price}</td>
+                                            <td className="fw-600">{p.name_en || p.name || 'Untitled'}</td>
+                                            <td>{t(p.category) || p.category || 'Uncategorized'}</td>
+                                            <td>${p.price || 0}</td>
                                             <td>₺{p.price_tr || 0}</td>
-                                            <td>{p.stock} units</td>
-                                            <td><span className="status-badge active">{p.status}</span></td>
+                                            <td>{p.stock ?? 0} units</td>
+                                            <td><span className={`status-badge ${p.stock > 0 ? 'active' : 'pending'}`}>{p.status || (p.stock > 0 ? 'Active' : 'Out of Stock')}</span></td>
                                             <td>
                                                 <button className="action-btn" onClick={() => handleEditClick(p)} style={{ marginRight: '0.5rem' }}>Edit</button>
                                                 <button className="action-btn delete-btn" onClick={() => handleDeleteProduct(p.id)} style={{ backgroundColor: '#ff4d4f', color: 'white', border: 'none' }}>Delete</button>
@@ -511,93 +699,210 @@ const AdminDashboard = () => {
                         <form onSubmit={handleAddProduct} className="add-product-container">
                             {/* Left Column: Form Details */}
                             <div className="product-form-card">
-                                <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Product Details</h3>
-                                <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <div className={`input-field ${errors.name_en ? 'error' : ''}`}>
-                                            <label>Product Name (EN)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Handmade Oak Desk"
-                                                value={newProduct.name_en}
-                                                onChange={(e) => {
-                                                    setNewProduct({ ...newProduct, name_en: e.target.value });
-                                                    if (errors.name_en) setErrors({ ...errors, name_en: null });
-                                                }}
-                                            />
-                                            {errors.name_en && <span className="error-message"><AlertCircle size={14} /> {errors.name_en}</span>}
-                                        </div>
-                                        <div className={`input-field ${errors.name_tr ? 'error' : ''}`}>
-                                            <label>Ürün Adı (TR)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="örn. El Yapımı Meşe Masa"
-                                                value={newProduct.name_tr}
-                                                onChange={(e) => {
-                                                    setNewProduct({ ...newProduct, name_tr: e.target.value });
-                                                    if (errors.name_tr) setErrors({ ...errors, name_tr: null });
-                                                }}
-                                            />
-                                            {errors.name_tr && <span className="error-message"><AlertCircle size={14} /> {errors.name_tr}</span>}
-                                        </div>
+                                <div className="card-header-with-tabs">
+                                    <h3 style={{ margin: 0, color: '#2d3748' }}>Product Details</h3>
+                                    <div className="form-tabs">
+                                        <button
+                                            type="button"
+                                            className={`tab-btn ${formTab === 'en' ? 'active' : ''}`}
+                                            onClick={() => setFormTab('en')}
+                                        >
+                                            English
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`tab-btn ${formTab === 'tr' ? 'active' : ''}`}
+                                            onClick={() => setFormTab('tr')}
+                                        >
+                                            Türkçe
+                                        </button>
                                     </div>
+                                </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <div className={`input-field ${errors.price ? 'error' : ''}`}>
-                                            <label>Price ($)</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                value={newProduct.price}
-                                                onChange={(e) => {
-                                                    const usdValue = e.target.value;
-                                                    const tryValue = usdValue ? (Number(usdValue) * EXCHANGE_RATE).toFixed(2) : '';
-                                                    setNewProduct({
-                                                        ...newProduct,
-                                                        price: usdValue,
-                                                        price_tr: tryValue
-                                                    });
-                                                    if (errors.price) setErrors({ ...errors, price: null });
-                                                }}
-                                            />
+                                <AnimatePresence mode="wait">
+                                    {formTab === 'en' ? (
+                                        <motion.div
+                                            key="en-fields"
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="form-grid"
+                                            style={{ gridTemplateColumns: '1fr' }}
+                                        >
+                                            <div className={`input-field ${errors.name_en ? 'error' : ''}`}>
+                                                <label>Product Name (EN) *</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. Handmade Oak Desk"
+                                                    value={newProduct.name_en || ''}
+                                                    onChange={(e) => {
+                                                        setNewProduct({ ...newProduct, name_en: e.target.value });
+                                                        if (errors.name_en) setErrors({ ...errors, name_en: null });
+                                                    }}
+                                                />
+                                                {errors.name_en && <span className="error-message"><AlertCircle size={14} /> {errors.name_en}</span>}
+                                            </div>
 
-                                            {errors.price && <span className="error-message"><AlertCircle size={14} /> {errors.price}</span>}
-                                        </div>
-                                        <div className="input-field">
-                                            <label>Fiyat (₺)</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                value={newProduct.price_tr}
-                                                onChange={(e) => {
-                                                    setNewProduct({ ...newProduct, price_tr: e.target.value });
-                                                }}
-                                            />
-                                        </div>
+                                            <div className="input-field">
+                                                <label>Description (EN)</label>
+                                                <textarea
+                                                    rows="4"
+                                                    placeholder="Describe the product in English..."
+                                                    value={newProduct.description_en || ''}
+                                                    onChange={(e) => setNewProduct({ ...newProduct, description_en: e.target.value })}
+                                                ></textarea>
+                                            </div>
+
+                                            <div className="form-grid-three">
+                                                <div className="input-field">
+                                                    <label>Dimensions (EN)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. 120x60x75 cm"
+                                                        value={newProduct.dimensions_en || ''}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, dimensions_en: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="input-field">
+                                                    <label>Finishing (EN)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. Matte Oil"
+                                                        value={newProduct.finishing_en || ''}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, finishing_en: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="input-field">
+                                                    <label>Material (EN)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. Solid Walnut"
+                                                        value={newProduct.material_en || ''}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, material_en: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="tr-fields"
+                                            initial={{ opacity: 0, x: 10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="form-grid"
+                                            style={{ gridTemplateColumns: '1fr' }}
+                                        >
+                                            <div className={`input-field ${errors.name_tr ? 'error' : ''}`}>
+                                                <label>Ürün Adı (TR) *</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="örn. El Yapımı Meşe Masa"
+                                                    value={newProduct.name_tr || ''}
+                                                    onChange={(e) => {
+                                                        setNewProduct({ ...newProduct, name_tr: e.target.value });
+                                                        if (errors.name_tr) setErrors({ ...errors, name_tr: null });
+                                                    }}
+                                                />
+                                                {errors.name_tr && <span className="error-message"><AlertCircle size={14} /> {errors.name_tr}</span>}
+                                            </div>
+
+                                            <div className="input-field">
+                                                <label>Açıklama (TR)</label>
+                                                <textarea
+                                                    rows="4"
+                                                    placeholder="Ürün açıklamasını Türkçe giriniz..."
+                                                    value={newProduct.description_tr || ''}
+                                                    onChange={(e) => setNewProduct({ ...newProduct, description_tr: e.target.value })}
+                                                ></textarea>
+                                            </div>
+
+                                            <div className="form-grid-three">
+                                                <div className="input-field">
+                                                    <label>Ölçüler (TR)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="örn. 120x60x75 cm"
+                                                        value={newProduct.dimensions_tr || ''}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, dimensions_tr: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="input-field">
+                                                    <label>Bitiş / Cila (TR)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="örn. Mat Yağ"
+                                                        value={newProduct.finishing_tr || ''}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, finishing_tr: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="input-field">
+                                                    <label>Malzeme (TR)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="örn. Masif Ceviz"
+                                                        value={newProduct.material_tr || ''}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, material_tr: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                <div className="divider"></div>
+
+                                <div className="form-grid">
+                                    <div className={`input-field ${errors.price ? 'error' : ''}`}>
+                                        <label>Price ($) *</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={newProduct.price || ''}
+                                            onChange={(e) => {
+                                                const usdValue = e.target.value;
+                                                const tryValue = usdValue ? (Number(usdValue) * EXCHANGE_RATE).toFixed(2) : '';
+                                                setNewProduct({
+                                                    ...newProduct,
+                                                    price: usdValue,
+                                                    price_tr: tryValue
+                                                });
+                                                if (errors.price) setErrors({ ...errors, price: null });
+                                            }}
+                                        />
+                                        {errors.price && <span className="error-message"><AlertCircle size={14} /> {errors.price}</span>}
                                     </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <div className={`input-field ${errors.stock ? 'error' : ''}`}>
-                                            <label>Stock</label>
-                                            <input
-                                                type="number"
-                                                placeholder="0"
-                                                value={newProduct.stock}
-                                                onChange={(e) => {
-                                                    setNewProduct({ ...newProduct, stock: e.target.value });
-                                                    if (errors.stock) setErrors({ ...errors, stock: null });
-                                                }}
-                                            />
-                                            {errors.stock && <span className="error-message"><AlertCircle size={14} /> {errors.stock}</span>}
-                                        </div>
+                                    <div className="input-field">
+                                        <label>Fiyat (₺)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={newProduct.price_tr || ''}
+                                            onChange={(e) => {
+                                                setNewProduct({ ...newProduct, price_tr: e.target.value });
+                                            }}
+                                        />
                                     </div>
-
+                                    <div className={`input-field ${errors.stock ? 'error' : ''}`}>
+                                        <label>Stock *</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0"
+                                            value={newProduct.stock === undefined ? '' : newProduct.stock}
+                                            onChange={(e) => {
+                                                setNewProduct({ ...newProduct, stock: e.target.value });
+                                                if (errors.stock) setErrors({ ...errors, stock: null });
+                                            }}
+                                        />
+                                        {errors.stock && <span className="error-message"><AlertCircle size={14} /> {errors.stock}</span>}
+                                    </div>
                                     <div className={`input-field ${errors.category ? 'error' : ''}`}>
-                                        <label>Category</label>
+                                        <label>Category *</label>
                                         <select
-                                            value={newProduct.category}
+                                            value={newProduct.category || 'cat_living'}
                                             onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                                         >
                                             <option value="cat_living">{t('cat_living')}</option>
@@ -613,90 +918,6 @@ const AdminDashboard = () => {
                                             <option value="cat_new_arrivals">{t('cat_new_arrivals')}</option>
                                             <option value="cat_sale">{t('cat_sale')}</option>
                                         </select>
-                                    </div>
-
-                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
-                                        <div className="input-field">
-                                            <label>Description (EN)</label>
-                                            <textarea
-                                                rows="3"
-                                                placeholder="Describe the product in English..."
-                                                value={newProduct.description_en || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, description_en: e.target.value })}
-                                            ></textarea>
-                                        </div>
-                                        <div className="input-field">
-                                            <label>Açıklama (TR)</label>
-                                            <textarea
-                                                rows="3"
-                                                placeholder="Ürün açıklamasını Türkçe giriniz..."
-                                                value={newProduct.description_tr || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, description_tr: e.target.value })}
-                                            ></textarea>
-                                        </div>
-                                    </div>
-
-                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
-                                        <div className="input-field">
-                                            <label>Dimensions (EN)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. 120x60x75 cm"
-                                                value={newProduct.dimensions_en || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, dimensions_en: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="input-field">
-                                            <label>Ölçüler (TR)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="örn. 120x60x75 cm"
-                                                value={newProduct.dimensions_tr || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, dimensions_tr: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
-                                        <div className="input-field">
-                                            <label>Finishing (EN)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Matte Oil"
-                                                value={newProduct.finishing_en || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, finishing_en: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="input-field">
-                                            <label>Bitiş / Cila (TR)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="örn. Mat Yağ"
-                                                value={newProduct.finishing_tr || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, finishing_tr: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
-                                        <div className="input-field">
-                                            <label>Material (EN)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Solid Walnut"
-                                                value={newProduct.material_en || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, material_en: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="input-field">
-                                            <label>Malzeme (TR)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="örn. Masif Ceviz"
-                                                value={newProduct.material_tr || ''}
-                                                onChange={(e) => setNewProduct({ ...newProduct, material_tr: e.target.value })}
-                                            />
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -717,34 +938,39 @@ const AdminDashboard = () => {
                                     ))}
 
                                     {/* Newly Selected Files */}
-                                    {imageFiles.map((file, idx) => (
-                                        <div key={`new-${idx}`} className="image-preview-container small">
-                                            <img src={URL.createObjectURL(file)} alt="New" />
-                                            <button type="button" className="remove-image-btn" onClick={() => removeNewFile(idx)}>
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
+                                    {imageFiles.map((file, idx) => {
+                                        const url = URL.createObjectURL(file);
+                                        return (
+                                            <div key={`new-${idx}`} className="image-preview-container small">
+                                                <img src={url} alt="New" onLoad={() => URL.revokeObjectURL(url)} />
+                                                <button type="button" className="remove-image-btn" onClick={() => removeNewFile(idx)}>
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
 
                                     {/* Add More Button / Drop Zone */}
-                                    <div className={`image-upload-wrapper mini ${errors.image ? 'error' : ''}`}>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={handleImageChange}
-                                        />
-                                        <Plus size={24} />
-                                        <span style={{ fontSize: '0.7rem', marginTop: '0.2rem' }}>Add</span>
-                                    </div>
+                                    {(!newProduct.images || (newProduct.images.length + imageFiles.length < 5)) && (
+                                        <div className={`image-upload-wrapper mini ${errors.image ? 'error' : ''}`}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleImageChange}
+                                            />
+                                            <Plus size={24} />
+                                            <span style={{ fontSize: '0.7rem', marginTop: '0.2rem' }}>Add</span>
+                                        </div>
+                                    )}
                                 </div>
                                 {errors.image && <span className="error-message" style={{ justifyContent: 'center' }}><AlertCircle size={14} /> {errors.image}</span>}
 
-                                <div className="form-actions" style={{ marginTop: '2rem', borderTop: 'none', padding: 0, justifyContent: 'space-between' }}>
-                                    <button type="button" className="cancel-btn" style={{ width: '48%' }} onClick={() => { setActiveTab('products'); resetForm(); }}>Cancel</button>
-                                    <button type="submit" className="gold-btn" style={{ width: '48%', justifyContent: 'center' }} disabled={isUploading}>
-                                        {isUploading ? 'Saving...' : (editingId ? 'Update Product' : 'Save Product')}
+                                <div className="form-actions" style={{ marginTop: '2rem', borderTop: 'none', padding: 0, flexDirection: 'column', gap: '1rem' }}>
+                                    <button type="submit" className="gold-btn" style={{ width: '100%', justifyContent: 'center', height: '48px', fontSize: '1rem' }} disabled={isUploading}>
+                                        {isUploading ? 'Processing...' : (editingId ? 'Update Product' : 'Save Product')}
                                     </button>
+                                    <button type="button" className="cancel-btn" style={{ width: '100%', height: '48px' }} onClick={() => { setActiveTab('products'); resetForm(); }}>Cancel</button>
                                 </div>
                             </div>
                         </form>
@@ -803,11 +1029,11 @@ const AdminDashboard = () => {
                                         <motion.tr key={r._id || i} variants={itemVariants} custom={i}>
                                             <td>
                                                 <div className="user-cell">
-                                                    <div className="user-avatar">{r.name ? r.name[0].toUpperCase() : 'U'}</div>
+                                                    <div className="user-avatar">{r.name ? r.name[0]?.toUpperCase() : '?'}</div>
                                                     <div>
-                                                        <div className="fw-600">{r.name}</div>
-                                                        <div className="text-sm">{r.email}</div>
-                                                        <div className="text-xs">{r.phone}</div>
+                                                        <div className="fw-600">{r.name || 'Anonymous'}</div>
+                                                        <div className="text-sm">{r.email || 'No email'}</div>
+                                                        <div className="text-xs">{r.phone || 'No phone'}</div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -819,17 +1045,17 @@ const AdminDashboard = () => {
                                                                 <img src={r.productDetails.image} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
                                                             )}
                                                             <div>
-                                                                <div style={{ fontWeight: 600, fontSize: '0.75rem' }}>{r.productDetails.name_en || r.productDetails.name}</div>
+                                                                <div style={{ fontWeight: 600, fontSize: '0.75rem' }}>{r.productDetails.name_en || r.productDetails.name || 'Unknown Item'}</div>
                                                                 <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Product Request</div>
                                                             </div>
                                                         </div>
                                                     )}
-                                                    <strong>Timeline:</strong> {r.timeline}<br />
-                                                    <span className="truncate-text" title={r.description}>{r.description && r.description.substring(0, 30)}...</span>
-                                                    {r.fileName && (
+                                                    <strong>Timeline:</strong> {r.timeline || 'Not specified'}<br />
+                                                    <span className="truncate-text" title={r.description}>{r.description ? r.description.substring(0, 30) : 'No description'}...</span>
+                                                    {r.file && (
                                                         <div style={{ marginTop: '4px' }}>
                                                             <a href={r.file} target="_blank" rel="noopener noreferrer" className="text-xs" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
-                                                                View Attachment ({r.fileName})
+                                                                View Attachment{r.fileName ? ` (${r.fileName})` : ''}
                                                             </a>
                                                         </div>
                                                     )}
@@ -855,17 +1081,16 @@ const AdminDashboard = () => {
                                                 </select>
                                             </td>
                                             <td>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <a
-                                                        href={`mailto:${r.email}?subject=Re: Your Quote Request - Woodify&body=Hi ${r.name},%0D%0A%0D%0AThank you for your interest in Woodify. We have received your request regarding: "${r.description}".`}
-                                                        className="action-btn primary"
-                                                        onClick={() => handleStatusUpdate(r._id, 'replied')}
-                                                        style={{ display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
-                                                    >
-                                                        <Mail size={14} /> Reply
-                                                    </a>
-                                                    {/* <button className="action-btn">View</button> */}
-                                                </div>
+                                                <button
+                                                    className="action-btn"
+                                                    onClick={() => {
+                                                        setSelectedQuote(r);
+                                                        setShowQuoteModal(true);
+                                                    }}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                >
+                                                    <Eye size={14} /> View
+                                                </button>
                                             </td>
                                         </motion.tr>
                                     )) : (
@@ -876,7 +1101,7 @@ const AdminDashboard = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </motion.div>
+                    </motion.div >
                 );
             case 'profile':
                 return (
@@ -891,9 +1116,9 @@ const AdminDashboard = () => {
                         <div className="profile-header glass-card">
                             <div className="profile-cover"></div>
                             <div className="profile-info-main">
-                                <div className="profile-avatar-large">
+                                <div className="profile-avatar-small">
                                     <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80" alt="Admin" />
-                                    <button className="edit-avatar"><Plus size={16} /></button>
+                                    <button className="edit-avatar"><Plus size={14} /></button>
                                 </div>
                                 <div className="profile-text">
                                     <h2>Admin User</h2>
@@ -1098,6 +1323,7 @@ const AdminDashboard = () => {
                         {renderContent()}
                     </AnimatePresence>
                 </div>
+                {renderQuoteDetailModal()}
             </main>
         </div>
     );

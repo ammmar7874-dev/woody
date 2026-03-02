@@ -9,7 +9,7 @@ const languages = [
     { code: 'tr', name: 'Türkçe', flag: '🇹🇷' }
 ];
 
-const LanguageSelector = ({ mobile = false }) => {
+const LanguageSelector = ({ mobile = false, onSelect }) => {
     const { i18n } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -29,6 +29,7 @@ const LanguageSelector = ({ mobile = false }) => {
     const handleLanguageChange = (code) => {
         i18n.changeLanguage(code);
         setIsOpen(false);
+        if (onSelect) onSelect(code);
     };
 
     if (mobile) {

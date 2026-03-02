@@ -101,15 +101,6 @@ const Navbar = () => {
 
                         <div className="nav-actions">
                             <LanguageSelector />
-                            {(currentUser || isDevAdmin) && (
-                                <button
-                                    className="dashboard-btn-nav"
-                                    onClick={() => navigate('/admin')}
-                                    title="Admin Dashboard"
-                                >
-                                    <LayoutDashboard size={18} />
-                                </button>
-                            )}
                             <button
                                 className="quote-btn-nav"
                                 onClick={() => openQuoteModal('special')}
@@ -138,13 +129,8 @@ const Navbar = () => {
                                         <span>{link.name}</span>
                                     </li>
                                 ))}
-                                {(currentUser || isDevAdmin) && (
-                                    <li onClick={() => handleNavigation('/admin')} className="mobile-dashboard-link">
-                                        <span>Dashboard</span>
-                                    </li>
-                                )}
                                 <li className="mobile-lang-container">
-                                    <LanguageSelector mobile={true} />
+                                    <LanguageSelector mobile={true} onSelect={() => setIsMenuOpen(false)} />
                                 </li>
                                 <li>
                                     <button

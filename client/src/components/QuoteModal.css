@@ -1,4 +1,4 @@
-.modal-backdrop {
+.quote-modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
@@ -10,7 +10,7 @@
     /* increased z-index */
 }
 
-.modal-overlay {
+.quote-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -25,12 +25,12 @@
     /* Keep this but ensure children have auto */
 }
 
-.modal-overlay>* {
+.quote-modal-overlay>* {
     pointer-events: auto;
     /* Re-enable for the modal itself */
 }
 
-.modal-container {
+.quote-modal-container {
     position: relative;
     width: 90%;
     max-width: 600px;
@@ -73,7 +73,7 @@
 }
 
 @media (max-width: 600px) {
-    .modal-container {
+    .quote-modal-container {
         width: 100%;
         height: 100%;
         max-height: 100%;

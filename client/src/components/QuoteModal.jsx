@@ -22,20 +22,20 @@ const QuoteModal = ({ isOpen, onClose }) => {
             {isOpen && (
                 <>
                     <motion.div
-                        className="modal-backdrop"
+                        className="quote-modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                     />
                     <motion.div
-                        className="modal-overlay"
+                        className="quote-modal-overlay"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
                         <motion.div
-                            className="modal-container"
+                            className="quote-modal-container"
                             initial={{ opacity: 0, y: 50, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 50, scale: 0.95 }}

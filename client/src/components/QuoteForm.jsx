@@ -8,7 +8,6 @@ import { db } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 import { fileToBase64 } from '../utils/fileToBase64';
 import { compressImage } from '../utils/compressImage';
-import ImageAdjuster from './ImageAdjuster';
 
 import { useQuote } from '../context/QuoteContext.jsx';
 
@@ -21,16 +20,13 @@ const QuoteForm = ({ onClose, isModal }) => {
         email: '',
         phone: '',
         description: '',
-        file: null,
-        fileBlob: null,
-        fileName: null,
+        selectedFiles: [], // Array of { file, name, type, isImage }
         timeline: '1-2 Weeks',
         whereToOrder: '',
         extraComments: ''
     });
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [adjusterInfo, setAdjusterInfo] = useState({ isOpen: false, src: null });
 
     const handleNext = () => setStep(prev => prev + 1);
     const handleBack = () => setStep(prev => prev - 1);
@@ -40,15 +36,20 @@ const QuoteForm = ({ onClose, isModal }) => {
         setIsSubmitting(true);
 
         try {
-            let fileUrl = null;
+            const processedFiles = [];
 
-            // Convert file to base64 with compression (if it's an image)
-            if (formData.fileBlob) {
-                if (formData.fileBlob.type.startsWith('image/')) {
-                    fileUrl = await compressImage(formData.fileBlob);
+            for (const fileObj of formData.selectedFiles) {
+                let fileUrl = null;
+                if (fileObj.isImage) {
+                    fileUrl = await compressImage(fileObj.file);
                 } else {
-                    fileUrl = await fileToBase64(formData.fileBlob);
+                    fileUrl = await fileToBase64(fileObj.file);
                 }
+                processedFiles.push({
+                    name: fileObj.name,
+                    type: fileObj.type,
+                    url: fileUrl
+                });
             }
 
             const submissionData = {
@@ -56,8 +57,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                 email: formData.email,
                 phone: formData.phone,
                 description: formData.description,
-                fileName: formData.fileName,
-                file: fileUrl, // Store the URL instead of base64
+                files: processedFiles,
                 timeline: formData.timeline,
                 whereToOrder: formData.whereToOrder,
                 extraComments: formData.extraComments,
@@ -78,8 +78,8 @@ const QuoteForm = ({ onClose, isModal }) => {
             const dataSize = new Blob([JSON.stringify(submissionData)]).size;
             if (dataSize > 1000000) {
                 alert(i18n.language === 'tr' ?
-                    "Hata: Dosya çok büyük. Lütfen daha küçük bir dosya seçin (Maksimum 1MB)." :
-                    "Error: File is too large. Please select a smaller file (Maximum 1MB).");
+                    "Hata: Dosyalar çok büyük. Lütfen daha az veya daha küçük dosyalar seçin (Toplam Maksimum 1MB)." :
+                    "Error: Files are too large. Please select fewer or smaller files (Total Maximum 1MB).");
                 setIsSubmitting(false);
                 return;
             }
@@ -92,6 +92,27 @@ const QuoteForm = ({ onClose, isModal }) => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleFileChange = (e) => {
+        const files = Array.from(e.target.files);
+        const newFiles = files.map(file => ({
+            file: file,
+            name: file.name,
+            type: file.type,
+            isImage: file.type.startsWith('image/')
+        }));
+        setFormData(prev => ({
+            ...prev,
+            selectedFiles: [...prev.selectedFiles, ...newFiles]
+        }));
+    };
+
+    const removeFile = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            selectedFiles: prev.selectedFiles.filter((_, i) => i !== index)
+        }));
     };
 
     if (isSubmitted) {
@@ -108,7 +129,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                     <button className="primary-btn" onClick={() => {
                         setIsSubmitted(false);
                         setStep(1);
-                        setFormData({ ...formData, description: '', file: null, fileBlob: null, fileName: null });
+                        setFormData({ ...formData, description: '', selectedFiles: [] });
                     }}>{t('q_new')}</button>
                     {isModal && (
                         <button className="secondary-btn" onClick={onClose} style={{ marginTop: '1rem' }}>
@@ -119,6 +140,41 @@ const QuoteForm = ({ onClose, isModal }) => {
             </motion.div>
         );
     }
+
+    const renderFileUpload = () => (
+        <div className="input-group file-upload-group">
+            <label>{t('q_upload')}</label>
+            <div className="upload-box">
+                <input
+                    type="file"
+                    className="file-input"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={handleFileChange}
+                />
+                <div className="upload-box-content">
+                    <Upload size={24} />
+                    <span>{t('q_upload_sub')}</span>
+                </div>
+            </div>
+            {formData.selectedFiles.length > 0 && (
+                <div className="selected-files-list">
+                    {formData.selectedFiles.map((f, idx) => (
+                        <div key={idx} className="file-item-chip">
+                            <span className="file-name-text">{f.name}</span>
+                            <button
+                                type="button"
+                                className="remove-file-btn"
+                                onClick={() => removeFile(idx)}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <div className={`quote-form-container ${isModal ? 'modal-mode' : ''}`}>
@@ -195,7 +251,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                             <div className="input-group">
                                 <label>{t('q_where_to_order')}</label>
                                 <textarea
-                                    rows="3"
+                                    rows="2"
                                     placeholder={i18n.language === 'tr' ? 'Teslimat adresi veya şehri giriniz...' : 'Enter delivery address or city...'}
                                     required
                                     value={formData.whereToOrder}
@@ -205,12 +261,13 @@ const QuoteForm = ({ onClose, isModal }) => {
                             <div className="input-group">
                                 <label>{t('q_extra_comments')}</label>
                                 <textarea
-                                    rows="3"
+                                    rows="2"
                                     placeholder={i18n.language === 'tr' ? 'Eklemek istediğiniz notlar...' : 'Any extra comments...'}
                                     value={formData.extraComments}
                                     onChange={(e) => setFormData({ ...formData, extraComments: e.target.value })}
                                 ></textarea>
                             </div>
+                            {renderFileUpload()}
                             <div className="form-nav">
                                 <button type="button" className="secondary-btn" onClick={handleBack}>{t('q_back')}</button>
                                 <button type="submit" className="primary-btn submit-btn" disabled={isSubmitting}>
@@ -239,59 +296,7 @@ const QuoteForm = ({ onClose, isModal }) => {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 ></textarea>
                             </div>
-                            <div className="input-group file-upload-group" style={{ display: quoteMode === 'product' ? 'none' : 'flex' }}>
-                                <label>{t('q_upload')}</label>
-                                <div className="upload-box">
-                                    <Upload size={24} />
-                                    <span>{t('q_upload_sub')}</span>
-                                    <input
-                                        type="file"
-                                        className="file-input"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file && file.type.startsWith('image/')) {
-                                                const reader = new FileReader();
-                                                reader.onload = (event) => {
-                                                    setAdjusterInfo({
-                                                        isOpen: true,
-                                                        src: event.target.result,
-                                                        originalFile: file
-                                                    });
-                                                };
-                                                reader.readAsDataURL(file);
-                                            } else if (file) {
-                                                setFormData({
-                                                    ...formData,
-                                                    fileBlob: file,
-                                                    fileName: file.name
-                                                });
-                                            }
-                                        }}
-                                    />
-                                    {formData.fileName && <p className="file-name" style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#4a5568' }}>{formData.fileName}</p>}
-                                </div>
-                            </div>
-
-                            <ImageAdjuster
-                                isOpen={adjusterInfo.isOpen}
-                                imageSrc={adjusterInfo.src}
-                                aspect={1.5} // Example: 3:2 aspect ratio for project photos
-                                onCancel={() => setAdjusterInfo({ isOpen: false, src: null })}
-                                onConfirm={(adjustedDataUrl) => {
-                                    // Convert dataURL back to a blob for consistency
-                                    fetch(adjustedDataUrl)
-                                        .then(res => res.blob())
-                                        .then(blob => {
-                                            setFormData({
-                                                ...formData,
-                                                fileBlob: blob,
-                                                fileName: adjusterInfo.originalFile.name
-                                            });
-                                            setAdjusterInfo({ isOpen: false, src: null });
-                                        });
-                                }}
-                            />
+                            {renderFileUpload()}
                             <div className="form-nav">
                                 <button type="button" className="secondary-btn" onClick={handleBack}>{t('q_back')}</button>
                                 <button type="button" className="primary-btn" onClick={handleNext}>{t('q_next')}</button>

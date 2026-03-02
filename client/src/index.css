@@ -133,3 +133,49 @@ button {
     padding: var(--spacing-lg) 0;
   }
 }
+
+/* Global Buttons */
+.primary-btn {
+  background: var(--primary);
+  color: white;
+  padding: 1.2rem 2.5rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.primary-btn:hover {
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.secondary-btn {
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 1.2rem 2.5rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.secondary-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.primary-btn:disabled,
+.secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}

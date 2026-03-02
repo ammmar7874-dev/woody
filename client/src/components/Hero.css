@@ -48,28 +48,6 @@
     gap: 1.5rem;
 }
 
-.primary-btn {
-    background: var(--primary);
-    color: white;
-    padding: 1.2rem 2.5rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    border-radius: 2px;
-}
-
-.secondary-btn {
-    border: 1px solid var(--primary);
-    color: var(--primary);
-    padding: 1.2rem 2.5rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    border-radius: 2px;
-}
-
-.secondary-btn:hover {
-    background: var(--primary);
-    color: white;
-}
 
 .hero-visual {
     position: absolute;
